@@ -1,0 +1,27 @@
+{
+  "name": "skola",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Decentralized course marketplace",
+  "scripts": {
+    "dev": "pnpm run --parallel --filter './apps/*' dev",
+    "dev:web": "pnpm --filter web dev",
+    "dev:platform": "pnpm --filter platform dev",
+    "dev:docs": "pnpm --filter docs dev",
+    "dev:api": "pnpm --filter api dev",
+    "build": "pnpm run --filter './apps/*' build",
+    "build:web": "pnpm --filter web build",
+    "build:platform": "pnpm --filter platform build",
+    "build:docs": "pnpm --filter docs build",
+    "build:api": "pnpm --filter api build",
+    "db:generate": "pnpm --filter api db:generate",
+    "db:migrate": "pnpm --filter api db:migrate",
+    "db:push": "pnpm --filter api db:push",
+    "db:studio": "pnpm --filter api db:studio",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "setup": "pnpm docker:up && sleep 3 && pnpm db:push",
+    "start": "pnpm setup && pnpm dev"
+  },
+  "packageManager": "pnpm@9.15.4"
+}

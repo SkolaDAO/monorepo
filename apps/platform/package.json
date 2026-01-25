@@ -1,0 +1,44 @@
+{
+  "name": "platform",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "start": "vite preview --port ${PORT:-4173}"
+  },
+  "dependencies": {
+    "@rainbow-me/rainbowkit": "^2.2.10",
+    "@skola/ui": "workspace:*",
+    "@tailwindcss/typography": "^0.5.19",
+    "@tanstack/react-query": "^5.90.16",
+    "@types/prismjs": "^1.26.5",
+    "@uiw/react-md-editor": "^4.0.11",
+    "lucide-react": "^0.562.0",
+    "novel": "^1.0.2",
+    "prismjs": "^1.30.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-dropzone": "^14.3.8",
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^7.1.1",
+    "rehype-highlight": "^7.0.2",
+    "rehype-prism-plus": "^2.0.1",
+    "remark-gfm": "^4.0.1",
+    "siwe": "^2.3.2",
+    "viem": "^2.44.1",
+    "wagmi": "^2.19.5"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.79",
+    "@types/react-dom": "^18.2.25",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.4.5",
+    "vite": "^6.0.5"
+  }
+}

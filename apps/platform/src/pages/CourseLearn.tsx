@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
+import * as DOMPurify from "dompurify";
 import Prism from "prismjs";
 import "prismjs/components/prism-solidity";
 import "prismjs/components/prism-typescript";
@@ -13,6 +14,31 @@ import "prismjs/components/prism-toml";
 import { Container, Button, cn } from "@skola/ui";
 
 void Prism;
+
+// Configure DOMPurify to allow safe tags and attributes
+DOMPurify.setConfig({
+  ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'hr', 'ul', 'ol', 'li', 
+    'blockquote', 'pre', 'code', 'a', 'strong', 'em', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
+  ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
+  ALLOW_DATA_ATTR: false,
+});
+
+// Hook to sanitize URLs - only allow http/https
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+  if (node.tagName === 'A') {
+    const href = node.getAttribute('href') || '';
+    // Only allow http, https, and relative URLs - block javascript:, data:, etc.
+    if (href && !/^(https?:\/\/|\/|#|\.)/i.test(href)) {
+      node.removeAttribute('href');
+      node.setAttribute('href', '#');
+    }
+    // Force external links to open safely
+    if (href.startsWith('http')) {
+      node.setAttribute('target', '_blank');
+      node.setAttribute('rel', 'noopener noreferrer');
+    }
+  }
+});
 import { useCourse } from "../hooks/useApiCourses";
 import { useLessons, useLesson } from "../hooks/useApiLessons";
 import { useCourseCommunityRoom } from "../hooks/useChat";
@@ -29,12 +55,14 @@ function estimateReadingTime(text: string | null | undefined): number {
 function processLessonContent(content: string | null | undefined): string {
   if (!content) return "";
   
-  // If content is markdown wrapped in <p> tags, extract and convert
   let processed = content;
   
-  // Check if it looks like markdown wrapped in p tags
-  if (content.includes("<p>") && (content.includes("##") || content.includes("```") || content.includes("- "))) {
-    // Strip p tags and convert markdown to HTML
+  // Check if content contains markdown syntax (headers, code blocks, lists)
+  const hasMarkdown = /^#{1,6}\s|```|^\s*[-*+]\s|^\s*\d+\.\s/m.test(content);
+  
+  // If content has HTML wrapper but contains markdown, extract it
+  if (content.includes("<p>") && hasMarkdown) {
+    // Strip p tags and decode HTML entities
     processed = content
       .replace(/<p>/gi, "")
       .replace(/<\/p>/gi, "\n")
@@ -43,72 +71,111 @@ function processLessonContent(content: string | null | undefined): string {
       .replace(/&amp;/gi, "&")
       .replace(/&lt;/gi, "<")
       .replace(/&gt;/gi, ">");
-    
-    // Convert markdown to HTML
+  }
+  
+  // Convert markdown to HTML if it contains markdown syntax
+  if (hasMarkdown || !content.includes("<")) {
     processed = markdownToHtml(processed);
   }
   
-  return processed;
+  // Sanitize the final HTML to prevent XSS
+  return DOMPurify.sanitize(processed);
 }
 
 function markdownToHtml(markdown: string): string {
   let html = markdown;
 
-  // Code blocks (must be first)
+  // Code blocks (must be first - escape HTML inside)
   html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
     return `<pre><code class="language-${lang || 'text'}">${escapeHtml(code.trim())}</code></pre>`;
   });
   
-  // Inline code
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // Inline code (escape HTML inside)
+  html = html.replace(/`([^`]+)`/g, (_, code) => `<code>${escapeHtml(code)}</code>`);
 
-  // Headers
-  html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
-  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
-  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  // Tables (must be before other processing)
+  html = html.replace(/^(\|.+\|)\n(\|[-:\s|]+\|)\n((?:\|.+\|\n?)+)/gm, (_, header, _separator, body) => {
+    const headerCells = header.split('|').filter((c: string) => c.trim()).map((c: string) => `<th>${escapeHtml(c.trim())}</th>`).join('');
+    const bodyRows = body.trim().split('\n').map((row: string) => {
+      const cells = row.split('|').filter((c: string) => c.trim()).map((c: string) => `<td>${escapeHtml(c.trim())}</td>`).join('');
+      return `<tr>${cells}</tr>`;
+    }).join('');
+    return `<table><thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table>`;
+  });
 
-  // Bold and italic
+  // Headers (escape HTML in content)
+  html = html.replace(/^#### (.+)$/gm, (_, content) => `<h4>${escapeHtml(content)}</h4>`);
+  html = html.replace(/^### (.+)$/gm, (_, content) => `<h3>${escapeHtml(content)}</h3>`);
+  html = html.replace(/^## (.+)$/gm, (_, content) => `<h2>${escapeHtml(content)}</h2>`);
+  html = html.replace(/^# (.+)$/gm, (_, content) => `<h1>${escapeHtml(content)}</h1>`);
+
+  // Bold and italic (these are safe as they wrap existing content)
   html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
 
-  // Links
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  // Links - escape the text, URL will be sanitized by DOMPurify
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) => {
+    return `<a href="${escapeHtml(url)}">${escapeHtml(text)}</a>`;
+  });
 
   // Blockquotes
-  html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+  html = html.replace(/^> (.+)$/gm, (_, content) => `<blockquote>${escapeHtml(content)}</blockquote>`);
 
   // Unordered lists
   let inList = false;
-  html = html.split('\n').map(line => {
-    const match = line.match(/^[-*+] (.+)$/);
-    if (match) {
-      const item = `<li>${match[1]}</li>`;
-      if (!inList) {
+  let listType: 'ul' | 'ol' | null = null;
+  const lines = html.split('\n');
+  const processedLines: string[] = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const ulMatch = line.match(/^[-*+] (.+)$/);
+    const olMatch = line.match(/^\d+\. (.+)$/);
+    
+    if (ulMatch) {
+      if (!inList || listType !== 'ul') {
+        if (inList) processedLines.push(`</${listType}>`);
+        processedLines.push('<ul>');
         inList = true;
-        return `<ul>${item}`;
+        listType = 'ul';
       }
-      return item;
-    } else if (inList && line.trim() === '') {
-      inList = false;
-      return '</ul>';
+      processedLines.push(`<li>${ulMatch[1]}</li>`);
+    } else if (olMatch) {
+      if (!inList || listType !== 'ol') {
+        if (inList) processedLines.push(`</${listType}>`);
+        processedLines.push('<ol>');
+        inList = true;
+        listType = 'ol';
+      }
+      processedLines.push(`<li>${olMatch[1]}</li>`);
+    } else {
+      if (inList && line.trim() === '') {
+        processedLines.push(`</${listType}>`);
+        inList = false;
+        listType = null;
+      } else if (inList && !line.match(/^\s/)) {
+        processedLines.push(`</${listType}>`);
+        inList = false;
+        listType = null;
+        processedLines.push(line);
+      } else {
+        processedLines.push(line);
+      }
     }
-    if (inList) {
-      inList = false;
-      return `</ul>${line}`;
-    }
-    return line;
-  }).join('\n');
-  if (inList) html += '</ul>';
+  }
+  if (inList && listType) processedLines.push(`</${listType}>`);
+  html = processedLines.join('\n');
 
   // Horizontal rules
   html = html.replace(/^---$/gm, '<hr>');
 
-  // Paragraphs
+  // Paragraphs - wrap text blocks that aren't already HTML
   html = html.split('\n\n').map(block => {
     block = block.trim();
     if (!block) return '';
+    // Skip if already starts with HTML tag
     if (block.match(/^<[a-z]/i)) return block;
+    // Wrap in paragraph, convert single newlines to br
     return `<p>${block.replace(/\n/g, '<br>')}</p>`;
   }).join('\n');
 
@@ -119,7 +186,9 @@ function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 export function CourseLearnPage() {

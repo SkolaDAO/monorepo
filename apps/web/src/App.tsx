@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, useInView, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Button, Badge, Container, ThemeToggle, cn } from "@skola/ui";
 import { FaXTwitter, FaDiscord, FaGithub } from "react-icons/fa6";
+
+const API_URL = import.meta.env.VITE_API_URL || "https://api.skola.academy";
 
 function App() {
   return (
@@ -422,40 +424,57 @@ function Stats() {
   );
 }
 
+interface FeaturedCourse {
+  id: string;
+  title: string;
+  thumbnail: string | null;
+  priceUsd: string;
+  isFree: boolean;
+  studentCount?: number;
+  creator?: {
+    username: string | null;
+    address: string;
+    avatar: string | null;
+    isVerified?: boolean;
+  };
+}
+
+function useFeaturedCourses() {
+  const [courses, setCourses] = useState<FeaturedCourse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchCourses = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_URL}/courses?limit=4`);
+      if (response.ok) {
+        const data = await response.json();
+        setCourses(data.data || []);
+      }
+    } catch {
+      // Silently fail - will show empty state or fallback
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCourses();
+  }, [fetchCourses]);
+
+  return { courses, isLoading };
+}
+
 function FeaturedCourses() {
   const ref = useRef<HTMLElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const { courses, isLoading } = useFeaturedCourses();
 
-  const courses = [
-    {
-      title: "DeFi Fundamentals",
-      creator: "CryptoMaster",
-      image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400&h=225&fit=crop",
-      tag: "FREE",
-      students: "1.2K",
-    },
-    {
-      title: "Smart Contract Security",
-      creator: "EthDev",
-      image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&h=225&fit=crop",
-      tag: "FREE",
-      students: "890",
-    },
-    {
-      title: "NFT Development",
-      creator: "Web3Builder",
-      image: "https://images.unsplash.com/photo-1620321023374-d1a68fbc720d?w=400&h=225&fit=crop",
-      tag: "FREE",
-      students: "650",
-    },
-    {
-      title: "Blockchain Basics",
-      creator: "ChainPro",
-      image: "https://images.unsplash.com/photo-1516245834210-c4c142787335?w=400&h=225&fit=crop",
-      tag: "FREE",
-      students: "2.1K",
-    },
-  ];
+  const truncateAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
+
+  // Don't render section if no courses and not loading
+  if (!isLoading && courses.length === 0) {
+    return null;
+  }
 
   return (
     <section ref={ref} className="py-20 md:py-32">
@@ -468,51 +487,98 @@ function FeaturedCourses() {
           <motion.div variants={fadeUpVariant} className="text-center mb-12">
             <Badge className="mb-4">Start Learning Now</Badge>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              Free Web3 Courses
+              Popular Courses
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Jump right in with our community-created free courses. No wallet needed to start learning.
+              Jump right in with courses from our community of expert creators.
             </p>
           </motion.div>
 
-          <motion.div
-            variants={staggerContainer}
-            className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6"
-          >
-            {courses.map((course) => (
-              <motion.a
-                key={course.title}
-                href="https://app.skola.academy"
-                variants={fadeUpVariant}
-                whileHover={{ y: -8, transition: { duration: 0.2 } }}
-                className="group relative bg-card rounded-2xl overflow-hidden border border-border/50 hover:border-primary/50 transition-colors"
-              >
-                <div className="relative aspect-video overflow-hidden">
-                  <img
-                    src={course.image}
-                    alt={course.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  <Badge className="absolute top-3 left-3 bg-green-500 text-white border-0">
-                    {course.tag}
-                  </Badge>
-                </div>
-                <div className="p-5">
-                  <h3 className="font-semibold text-lg mb-1 group-hover:text-primary transition-colors">
-                    {course.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-3">by {course.creator}</p>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                    {course.students} students
+          {isLoading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="bg-card rounded-2xl overflow-hidden border border-border/50 animate-pulse">
+                  <div className="aspect-video bg-muted" />
+                  <div className="p-5 space-y-3">
+                    <div className="h-5 bg-muted rounded w-3/4" />
+                    <div className="h-4 bg-muted rounded w-1/2" />
                   </div>
                 </div>
-              </motion.a>
-            ))}
-          </motion.div>
+              ))}
+            </div>
+          ) : (
+            <motion.div
+              variants={staggerContainer}
+              className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6"
+            >
+              {courses.map((course) => (
+                <motion.a
+                  key={course.id}
+                  href={`https://app.skola.academy/course/${course.id}`}
+                  variants={fadeUpVariant}
+                  whileHover={{ y: -8, transition: { duration: 0.2 } }}
+                  className="group relative bg-card rounded-2xl overflow-hidden border border-border/50 hover:border-primary/50 transition-colors"
+                >
+                  <div className="relative aspect-video overflow-hidden bg-muted">
+                    {course.thumbnail ? (
+                      <img
+                        src={course.thumbnail}
+                        alt={course.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
+                        <svg className="w-12 h-12 text-primary/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <Badge className={cn(
+                      "absolute top-3 left-3 border-0",
+                      course.isFree ? "bg-green-500 text-white" : "bg-background/90 text-foreground"
+                    )}>
+                      {course.isFree ? "FREE" : `$${Number(course.priceUsd).toFixed(0)}`}
+                    </Badge>
+                  </div>
+                  <div className="p-5">
+                    <h3 className="font-semibold text-lg mb-2 group-hover:text-primary transition-colors line-clamp-2">
+                      {course.title}
+                    </h3>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      {course.creator?.avatar ? (
+                        <img
+                          src={course.creator.avatar}
+                          alt=""
+                          className="w-5 h-5 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-[10px] font-medium text-white">
+                          {(course.creator?.username || course.creator?.address || "?")[0].toUpperCase()}
+                        </div>
+                      )}
+                      <span className="truncate flex items-center gap-1">
+                        {course.creator?.username || truncateAddress(course.creator?.address || "")}
+                        {course.creator?.isVerified && (
+                          <svg className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8.52 3.59a3.5 3.5 0 0 1 6.96 0c1.2.16 2.33.8 3.1 1.83a3.5 3.5 0 0 1 4.92 4.92 3.5 3.5 0 0 1 0 6.96 3.5 3.5 0 0 1-4.92 4.92 3.5 3.5 0 0 1-6.96 0 3.5 3.5 0 0 1-4.92-4.92 3.5 3.5 0 0 1 0-6.96A3.5 3.5 0 0 1 8.52 3.6Zm6.78 6.2a.75.75 0 1 0-1.1-1.02l-3.78 4.07-1.64-1.64a.75.75 0 0 0-1.06 1.06l2.2 2.2a.75.75 0 0 0 1.08-.02l4.3-4.65Z" />
+                          </svg>
+                        )}
+                      </span>
+                    </div>
+                    {course.studentCount !== undefined && course.studentCount > 0 && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        {course.studentCount.toLocaleString()} students
+                      </div>
+                    )}
+                  </div>
+                </motion.a>
+              ))}
+            </motion.div>
+          )}
 
           <motion.div variants={fadeUpVariant} className="text-center mt-10">
             <a href="https://app.skola.academy">

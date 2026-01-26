@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useInView, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Button, Badge, Container, ThemeToggle, cn } from "@skola/ui";
+import { FaXTwitter, FaDiscord, FaGithub } from "react-icons/fa6";
 
 function App() {
   return (
@@ -11,7 +12,6 @@ function App() {
       <FeaturedCourses />
       <Features />
       <HowItWorks />
-      <Testimonials />
       <Pricing />
       <Comparison />
       <FAQ />
@@ -736,94 +736,6 @@ function HowItWorks() {
   );
 }
 
-function Testimonials() {
-  const ref = useRef<HTMLElement>(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  const testimonials = [
-    {
-      content: "Finally a platform that doesn't take half my earnings. Made my first $500 in the first week!",
-      author: "Alex Chen",
-      role: "DeFi Educator",
-      avatar: "https://i.pravatar.cc/100?img=1",
-    },
-    {
-      content: "The instant payments are game-changing. No more waiting 60 days to get paid.",
-      author: "Sarah Kim",
-      role: "Smart Contract Developer",
-      avatar: "https://i.pravatar.cc/100?img=5",
-    },
-    {
-      content: "Built-in video protection means I can finally stop worrying about piracy. Love it!",
-      author: "Mike Johnson",
-      role: "NFT Artist & Teacher",
-      avatar: "https://i.pravatar.cc/100?img=3",
-    },
-    {
-      content: "The course chat feature helps me build a real community around my content. 10/10.",
-      author: "Lisa Wang",
-      role: "Blockchain Consultant",
-      avatar: "https://i.pravatar.cc/100?img=9",
-    },
-  ];
-
-  return (
-    <section ref={ref} className="py-20 md:py-32 bg-muted/30">
-      <Container>
-        <motion.div
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          variants={staggerContainer}
-        >
-          <motion.div variants={fadeUpVariant} className="text-center mb-16">
-            <Badge className="mb-4">Testimonials</Badge>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              Loved by Crypto Educators
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Join hundreds of creators who've made the switch to fair creator economics.
-            </p>
-          </motion.div>
-
-          <motion.div
-            variants={staggerContainer}
-            className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto"
-          >
-            {testimonials.map((testimonial) => (
-              <motion.div
-                key={testimonial.author}
-                variants={fadeUpVariant}
-                whileHover={{ y: -4 }}
-                className="p-6 rounded-2xl bg-card border border-border/50 hover:border-primary/30 transition-all"
-              >
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <svg key={i} className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-                <p className="text-lg mb-6">"{testimonial.content}"</p>
-                <div className="flex items-center gap-3">
-                  <img
-                    src={testimonial.avatar}
-                    alt={testimonial.author}
-                    className="w-12 h-12 rounded-full"
-                  />
-                  <div>
-                    <p className="font-semibold">{testimonial.author}</p>
-                    <p className="text-sm text-muted-foreground">{testimonial.role}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </motion.div>
-      </Container>
-    </section>
-  );
-}
-
 function Pricing() {
   const ref = useRef<HTMLElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
@@ -1209,21 +1121,33 @@ function Footer() {
               The decentralized course marketplace. Create, teach, and earn on your terms.
             </p>
             <div className="flex gap-4">
-              {[
-                { href: "https://x.com/skoladao", icon: "𝕏" },
-                { href: "https://discord.gg/5qec9N8xmY", icon: "Discord" },
-                { href: "https://github.com/SkolaDAO", icon: "GitHub" },
-              ].map((social) => (
-                <a
-                  key={social.href}
-                  href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors text-sm font-medium"
-                >
-                  {social.icon === "𝕏" ? "𝕏" : social.icon[0]}
-                </a>
-              ))}
+              <a
+                href="https://x.com/skoladao"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+                aria-label="Twitter / X"
+              >
+                <FaXTwitter className="w-5 h-5" />
+              </a>
+              <a
+                href="https://discord.gg/5qec9N8xmY"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+                aria-label="Discord"
+              >
+                <FaDiscord className="w-5 h-5" />
+              </a>
+              <a
+                href="https://github.com/SkolaDAO"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+                aria-label="GitHub"
+              >
+                <FaGithub className="w-5 h-5" />
+              </a>
             </div>
           </div>
 

@@ -242,7 +242,11 @@ function CourseDetail({
                       <CheckIcon className="mx-auto mb-2 h-8 w-8 text-primary" />
                       <p className="font-medium">You have access to this course</p>
                     </div>
-                    <Button className="w-full" size="lg">
+                    <Button 
+                      className="w-full" 
+                      size="lg"
+                      onClick={() => navigate(`/course/${id}/learn`)}
+                    >
                       Start Learning
                     </Button>
                   </div>

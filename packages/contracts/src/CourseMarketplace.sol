@@ -16,6 +16,7 @@ interface ICreatorRegistry {
 /// @title CourseMarketplace
 /// @notice Marketplace for creating and purchasing courses
 /// @dev UUPS Upgradeable with Chainlink price feeds
+/// @dev First course is free for everyone, subsequent courses require CreatorRegistry registration
 contract CourseMarketplace is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -24,6 +25,7 @@ contract CourseMarketplace is Initializable, UUPSUpgradeable, OwnableUpgradeable
         uint256 priceUsd;
         string metadataURI;
         bool active;
+        bool hidden;           // Moderation: hidden from public listings
         uint256 totalSales;
         uint256 totalRevenue;
     }
@@ -37,10 +39,12 @@ contract CourseMarketplace is Initializable, UUPSUpgradeable, OwnableUpgradeable
     uint256 public constant MAX_BPS = 10000;
 
     address public treasury;
+    address public moderator;
 
     uint256 public nextCourseId;
     mapping(uint256 => Course) public courses;
     mapping(uint256 => mapping(address => bool)) public hasPurchased;
+    mapping(address => uint256) public creatorCourseCount;  // Track courses per creator
 
     event CourseCreated(
         uint256 indexed courseId,
@@ -51,6 +55,9 @@ contract CourseMarketplace is Initializable, UUPSUpgradeable, OwnableUpgradeable
     event CourseUpdated(uint256 indexed courseId, uint256 priceUsd, string metadataURI);
     event CourseDeactivated(uint256 indexed courseId);
     event CourseReactivated(uint256 indexed courseId);
+    event CourseHidden(uint256 indexed courseId, address indexed moderator);
+    event CourseUnhidden(uint256 indexed courseId, address indexed moderator);
+    event CourseDeleted(uint256 indexed courseId, address indexed moderator);
     event CoursePurchasedWithETH(
         uint256 indexed courseId,
         address indexed buyer,
@@ -65,12 +72,16 @@ contract CourseMarketplace is Initializable, UUPSUpgradeable, OwnableUpgradeable
         uint256 usdcPaid
     );
     event TreasuryUpdated(address indexed newTreasury);
+    event ModeratorUpdated(address indexed newModerator);
     event FeesUpdated(uint256 protocolFeeBps, uint256 referrerFeeBps);
     event PriceFeedUpdated(address indexed priceFeed);
 
-    error NotStaked();
+    error NotRegistered();
+    error FreeCourseUsed();
     error NotCourseCreator();
     error CourseNotActive();
+    error CourseHiddenByMod();
+    error CourseWasDeleted();
     error AlreadyPurchased();
     error InvalidPrice();
     error InvalidMetadata();
@@ -79,6 +90,7 @@ contract CourseMarketplace is Initializable, UUPSUpgradeable, OwnableUpgradeable
     error InsufficientPayment();
     error TransferFailed();
     error StalePrice();
+    error NotModerator();
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -98,6 +110,7 @@ contract CourseMarketplace is Initializable, UUPSUpgradeable, OwnableUpgradeable
         creatorRegistry = ICreatorRegistry(_creatorRegistry);
         priceFeed = AggregatorV3Interface(_priceFeed);
         treasury = _treasury;
+        moderator = 0x94a42DB1E578eFf403B1644FA163e523803241Fd;
 
         protocolFeeBps = 500;
         referrerFeeBps = 300;
@@ -113,18 +126,28 @@ contract CourseMarketplace is Initializable, UUPSUpgradeable, OwnableUpgradeable
         return uint256(price) * 1e6 / 1e8;
     }
 
+    /// @notice Create a new course
+    /// @dev First course is free for everyone. Additional courses require CreatorRegistry registration.
     function createCourse(uint256 priceUsd, string calldata metadataURI) external returns (uint256) {
-        if (!creatorRegistry.isRegistered(msg.sender)) revert NotStaked();
+        uint256 existingCourses = creatorCourseCount[msg.sender];
+        
+        // First course is free, subsequent courses require registration
+        if (existingCourses >= 1 && !creatorRegistry.isRegistered(msg.sender)) {
+            revert NotRegistered();
+        }
+        
         if (priceUsd == 0) revert InvalidPrice();
         if (bytes(metadataURI).length == 0) revert InvalidMetadata();
 
         uint256 courseId = nextCourseId++;
+        creatorCourseCount[msg.sender]++;
 
         courses[courseId] = Course({
             creator: msg.sender,
             priceUsd: priceUsd,
             metadataURI: metadataURI,
             active: true,
+            hidden: false,
             totalSales: 0,
             totalRevenue: 0
         });
@@ -157,10 +180,66 @@ contract CourseMarketplace is Initializable, UUPSUpgradeable, OwnableUpgradeable
     function reactivateCourse(uint256 courseId) external {
         Course storage course = courses[courseId];
         if (course.creator != msg.sender) revert NotCourseCreator();
+        if (course.hidden) revert CourseHiddenByMod();  // Can't reactivate if hidden by moderator
 
         course.active = true;
 
         emit CourseReactivated(courseId);
+    }
+
+    // ============ Moderation Functions ============
+
+    modifier onlyModerator() {
+        if (msg.sender != moderator && msg.sender != owner()) revert NotModerator();
+        _;
+    }
+
+    /// @notice Hide a course from public listings (moderation)
+    /// @dev Course still exists but won't appear in public queries. Existing buyers keep access.
+    function hideCourse(uint256 courseId) external onlyModerator {
+        Course storage course = courses[courseId];
+        if (course.creator == address(0)) revert CourseWasDeleted();
+        
+        course.hidden = true;
+        course.active = false;  // Also deactivate to prevent new purchases
+
+        emit CourseHidden(courseId, msg.sender);
+    }
+
+    /// @notice Unhide a course (restore to public listings)
+    function unhideCourse(uint256 courseId) external onlyModerator {
+        Course storage course = courses[courseId];
+        if (course.creator == address(0)) revert CourseWasDeleted();
+        
+        course.hidden = false;
+        // Note: doesn't automatically reactivate - creator must do that
+
+        emit CourseUnhidden(courseId, msg.sender);
+    }
+
+    /// @notice Permanently delete a course (severe moderation action)
+    /// @dev Sets creator to zero address. Existing buyers lose access.
+    function deleteCourse(uint256 courseId) external onlyModerator {
+        Course storage course = courses[courseId];
+        if (course.creator == address(0)) revert CourseWasDeleted();
+        
+        address creator = course.creator;
+        
+        // Decrement creator's course count
+        if (creatorCourseCount[creator] > 0) {
+            creatorCourseCount[creator]--;
+        }
+        
+        // Clear course data
+        delete courses[courseId];
+
+        emit CourseDeleted(courseId, msg.sender);
+    }
+
+    /// @notice Check if a course is visible (not hidden and not deleted)
+    function isVisible(uint256 courseId) external view returns (bool) {
+        Course storage course = courses[courseId];
+        return course.creator != address(0) && !course.hidden;
     }
 
     function purchaseWithETH(
@@ -168,6 +247,8 @@ contract CourseMarketplace is Initializable, UUPSUpgradeable, OwnableUpgradeable
         address referrer
     ) external payable nonReentrant {
         Course storage course = courses[courseId];
+        if (course.creator == address(0)) revert CourseWasDeleted();
+        if (course.hidden) revert CourseHiddenByMod();
         if (!course.active) revert CourseNotActive();
         if (hasPurchased[courseId][msg.sender]) revert AlreadyPurchased();
         if (course.creator == msg.sender) revert SelfPurchase();
@@ -210,6 +291,8 @@ contract CourseMarketplace is Initializable, UUPSUpgradeable, OwnableUpgradeable
         address referrer
     ) external nonReentrant {
         Course storage course = courses[courseId];
+        if (course.creator == address(0)) revert CourseWasDeleted();
+        if (course.hidden) revert CourseHiddenByMod();
         if (!course.active) revert CourseNotActive();
         if (hasPurchased[courseId][msg.sender]) revert AlreadyPurchased();
         if (course.creator == msg.sender) revert SelfPurchase();
@@ -236,8 +319,12 @@ contract CourseMarketplace is Initializable, UUPSUpgradeable, OwnableUpgradeable
         return courses[courseId];
     }
 
+    /// @notice Check if user has access to a course
+    /// @dev Returns true if user purchased OR is creator. Note: deleted courses return false.
     function hasAccess(uint256 courseId, address user) external view returns (bool) {
-        return hasPurchased[courseId][user] || courses[courseId].creator == user;
+        Course storage course = courses[courseId];
+        if (course.creator == address(0)) return false;  // Deleted course
+        return hasPurchased[courseId][user] || course.creator == user;
     }
 
     function getPriceInETH(uint256 courseId) external view returns (uint256) {
@@ -269,5 +356,15 @@ contract CourseMarketplace is Initializable, UUPSUpgradeable, OwnableUpgradeable
 
     function setCreatorRegistry(address _creatorRegistry) external onlyOwner {
         creatorRegistry = ICreatorRegistry(_creatorRegistry);
+    }
+
+    function setModerator(address _moderator) external onlyOwner {
+        moderator = _moderator;
+        emit ModeratorUpdated(_moderator);
+    }
+
+    /// @notice Get the number of courses a creator has made
+    function getCreatorCourseCount(address creator) external view returns (uint256) {
+        return creatorCourseCount[creator];
     }
 }

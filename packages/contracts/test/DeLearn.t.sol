@@ -144,10 +144,23 @@ contract DeLearnTest is Test {
         assertEq(creator.balance, balanceBefore - requiredEth);
     }
 
-    function test_CannotCreateCourseWithoutRegistration() public {
+    function test_FirstCourseIsFree() public {
+        // First course should work without registration
+        vm.prank(creator);
+        uint256 courseId = marketplace.createCourse(50e6, "ipfs://test");
+        assertEq(courseId, 1);
+        assertEq(marketplace.getCreatorCourseCount(creator), 1);
+    }
+
+    function test_SecondCourseRequiresRegistration() public {
+        // First course free
+        vm.prank(creator);
+        marketplace.createCourse(50e6, "ipfs://test1");
+
+        // Second course should fail without registration
         vm.prank(creator);
         vm.expectRevert();
-        marketplace.createCourse(50e6, "ipfs://test");
+        marketplace.createCourse(50e6, "ipfs://test2");
     }
 
     function test_CreateCourse() public {
@@ -159,10 +172,11 @@ contract DeLearnTest is Test {
         vm.stopPrank();
 
         assertEq(courseId, 1);
-        (address courseCreator, uint256 price, , bool active, , ) = marketplace.courses(courseId);
+        (address courseCreator, uint256 price, , bool active, bool hidden, , ) = marketplace.courses(courseId);
         assertEq(courseCreator, creator);
         assertEq(price, 50e6);
         assertTrue(active);
+        assertFalse(hidden);
     }
 
     function test_CreateUnlimitedCourses() public {
@@ -272,12 +286,83 @@ contract DeLearnTest is Test {
         uint256 courseId = marketplace.createCourse(50e6, "ipfs://metadata");
         
         marketplace.deactivateCourse(courseId);
-        (, , , bool activeAfterDeactivate, , ) = marketplace.courses(courseId);
+        (, , , bool activeAfterDeactivate, , , ) = marketplace.courses(courseId);
         assertFalse(activeAfterDeactivate);
 
         marketplace.reactivateCourse(courseId);
-        (, , , bool activeAfterReactivate, , ) = marketplace.courses(courseId);
+        (, , , bool activeAfterReactivate, , , ) = marketplace.courses(courseId);
         assertTrue(activeAfterReactivate);
         vm.stopPrank();
+    }
+
+    function test_ModeratorCanHideCourse() public {
+        vm.prank(creator);
+        uint256 courseId = marketplace.createCourse(50e6, "ipfs://metadata");
+
+        address moderator = marketplace.moderator();
+        
+        vm.prank(moderator);
+        marketplace.hideCourse(courseId);
+
+        (, , , bool active, bool hidden, , ) = marketplace.courses(courseId);
+        assertTrue(hidden);
+        assertFalse(active);
+        assertFalse(marketplace.isVisible(courseId));
+    }
+
+    function test_ModeratorCanUnhideCourse() public {
+        vm.prank(creator);
+        uint256 courseId = marketplace.createCourse(50e6, "ipfs://metadata");
+
+        address moderator = marketplace.moderator();
+        
+        vm.prank(moderator);
+        marketplace.hideCourse(courseId);
+
+        vm.prank(moderator);
+        marketplace.unhideCourse(courseId);
+
+        (, , , , bool hidden, , ) = marketplace.courses(courseId);
+        assertFalse(hidden);
+        assertTrue(marketplace.isVisible(courseId));
+    }
+
+    function test_ModeratorCanDeleteCourse() public {
+        vm.prank(creator);
+        uint256 courseId = marketplace.createCourse(50e6, "ipfs://metadata");
+        assertEq(marketplace.getCreatorCourseCount(creator), 1);
+
+        address moderator = marketplace.moderator();
+        
+        vm.prank(moderator);
+        marketplace.deleteCourse(courseId);
+
+        (address courseCreator, , , , , , ) = marketplace.courses(courseId);
+        assertEq(courseCreator, address(0));
+        assertEq(marketplace.getCreatorCourseCount(creator), 0);
+    }
+
+    function test_CannotPurchaseHiddenCourse() public {
+        vm.prank(creator);
+        uint256 courseId = marketplace.createCourse(50e6, "ipfs://metadata");
+
+        address moderator = marketplace.moderator();
+        vm.prank(moderator);
+        marketplace.hideCourse(courseId);
+
+        vm.startPrank(learner);
+        usdc.approve(address(marketplace), 50e6);
+        vm.expectRevert();
+        marketplace.purchaseWithUSDC(courseId, address(0));
+        vm.stopPrank();
+    }
+
+    function test_OwnerCanSetModerator() public {
+        address newModerator = address(99);
+        
+        vm.prank(owner);
+        marketplace.setModerator(newModerator);
+
+        assertEq(marketplace.moderator(), newModerator);
     }
 }

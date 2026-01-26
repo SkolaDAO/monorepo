@@ -26,10 +26,14 @@ WORKDIR /app
 COPY --from=builder /app/package.json /app/pnpm-workspace.yaml /app/pnpm-lock.yaml ./
 COPY --from=builder /app/apps/api ./apps/api
 
-RUN pnpm install --frozen-lockfile --filter api --prod
+# Install all deps (need drizzle-kit for migrations)
+RUN pnpm install --frozen-lockfile --filter api
 
 WORKDIR /app/apps/api
 
+# Make start script executable
+RUN chmod +x start.sh
+
 EXPOSE 80
 
-CMD ["node", "dist/index.js"]
+CMD ["./start.sh"]

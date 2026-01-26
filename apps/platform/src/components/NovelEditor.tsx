@@ -31,7 +31,11 @@ const extensions = [
 export function NovelEditor({ initialContent, onChange, className }: NovelEditorProps) {
   const initialJSON = useMemo(() => {
     if (!initialContent) return undefined;
-    return htmlToJSON(initialContent);
+    // Convert markdown to HTML if content looks like markdown
+    const content = looksLikeMarkdown(initialContent) 
+      ? markdownToHtml(initialContent) 
+      : initialContent;
+    return htmlToJSON(content);
   }, [initialContent]);
 
   const handleUpdate = useCallback(
@@ -169,4 +173,64 @@ function htmlToJSON(html: string): JSONContent | undefined {
     type: "doc",
     content: content.length > 0 ? content : [{ type: "paragraph" }],
   };
+}
+
+function looksLikeMarkdown(text: string): boolean {
+  // Check for common markdown patterns
+  const markdownPatterns = [
+    /^#{1,6}\s/m,           // Headers
+    /^\s*[-*+]\s/m,         // Unordered lists
+    /^\s*\d+\.\s/m,         // Ordered lists
+    /```/,                   // Code blocks
+    /\*\*[^*]+\*\*/,        // Bold
+    /\*[^*]+\*/,            // Italic
+    /\[.+\]\(.+\)/,         // Links
+    /^>/m,                   // Blockquotes
+  ];
+  return markdownPatterns.some(pattern => pattern.test(text));
+}
+
+function markdownToHtml(markdown: string): string {
+  let html = markdown;
+
+  // Code blocks (must be first to prevent inner parsing)
+  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+  
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // Headers
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+  // Bold and italic
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+  // Links
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+
+  // Blockquotes
+  html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+
+  // Unordered lists
+  html = html.replace(/^[\s]*[-*+] (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+
+  // Ordered lists  
+  html = html.replace(/^[\s]*\d+\. (.+)$/gm, '<li>$1</li>');
+
+  // Horizontal rules
+  html = html.replace(/^---$/gm, '<hr>');
+
+  // Paragraphs (lines not already wrapped)
+  html = html.split('\n\n').map(block => {
+    if (block.trim() && !block.match(/^<[a-z]/i)) {
+      return `<p>${block.replace(/\n/g, '<br>')}</p>`;
+    }
+    return block;
+  }).join('\n');
+
+  return html;
 }

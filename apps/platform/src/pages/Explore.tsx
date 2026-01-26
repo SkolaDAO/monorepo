@@ -1,8 +1,22 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Button, Card, CardContent, CardHeader, CardTitle, Container, Badge } from "@skola/ui";
+import { motion, useInView } from "framer-motion";
+import { Button, Card, CardContent, CardHeader, CardTitle, Container, Badge, cn } from "@skola/ui";
 import { useCourses } from "../hooks/useApiCourses";
 import { useCategories } from "../hooks/useCategories";
+
+const fadeInUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1] as const } },
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08, delayChildren: 0.1 },
+  },
+};
 
 export function ExplorePage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -12,6 +26,8 @@ export function ExplorePage() {
   const page = parseInt(searchParams.get("page") || "1", 10);
 
   const [searchInput, setSearchInput] = useState(searchQuery || "");
+  const heroRef = useRef<HTMLDivElement>(null);
+  const isHeroInView = useInView(heroRef, { once: true });
 
   const { categories, isLoading: categoriesLoading } = useCategories();
   const { data, isLoading: coursesLoading } = useCourses({
@@ -68,126 +84,226 @@ export function ExplorePage() {
   const selectedCategory = categories.find((c) => c.slug === categorySlug);
 
   return (
-    <div className="py-8">
-      <Container>
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Explore Courses</h1>
-          <p className="text-muted-foreground">
-            Learn from expert creators. Quality content, fair prices.
-          </p>
+    <div className="min-h-screen">
+      {/* Hero Section with animated background */}
+      <div ref={heroRef} className="relative overflow-hidden border-b border-border/50">
+        {/* Animated gradient orbs */}
+        <div className="absolute inset-0 overflow-hidden">
+          <motion.div
+            className="absolute -top-1/2 -left-1/4 w-[600px] h-[600px] rounded-full"
+            style={{
+              background: "radial-gradient(circle, hsl(var(--primary) / 0.08) 0%, transparent 70%)",
+            }}
+            animate={{
+              scale: [1, 1.2, 1],
+              x: [0, 30, 0],
+              y: [0, -20, 0],
+            }}
+            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.div
+            className="absolute -bottom-1/2 -right-1/4 w-[500px] h-[500px] rounded-full"
+            style={{
+              background: "radial-gradient(circle, hsl(217 91% 60% / 0.06) 0%, transparent 70%)",
+            }}
+            animate={{
+              scale: [1.2, 1, 1.2],
+              x: [0, -30, 0],
+            }}
+            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+          />
         </div>
 
-        <form onSubmit={handleSearch} className="mb-6">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search courses..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full rounded-lg border border-border bg-background py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-            <Button type="submit">Search</Button>
+        <Container className="relative py-12 md:py-16">
+          <motion.div
+            initial="hidden"
+            animate={isHeroInView ? "visible" : "hidden"}
+            variants={staggerContainer}
+            className="max-w-3xl"
+          >
+            <motion.h1
+              variants={fadeInUp}
+              className="text-4xl md:text-5xl font-bold mb-4"
+            >
+              Explore{" "}
+              <span className="text-gradient">Web3 Courses</span>
+            </motion.h1>
+            <motion.p
+              variants={fadeInUp}
+              className="text-lg text-muted-foreground mb-8"
+            >
+              Learn blockchain, DeFi, smart contracts and more from expert creators.
+              Quality content, fair prices, instant access.
+            </motion.p>
+
+            {/* Search bar */}
+            <motion.form variants={fadeInUp} onSubmit={handleSearch}>
+              <div className="flex gap-3">
+                <div className="relative flex-1">
+                  <SearchIcon className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="Search courses, topics, or creators..."
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    className="w-full h-12 rounded-xl border border-border bg-background/80 backdrop-blur-sm py-3 pl-12 pr-4 text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                  />
+                </div>
+                <Button type="submit" size="lg" className="px-6 h-12 shadow-lg shadow-primary/20">
+                  Search
+                </Button>
+              </div>
+            </motion.form>
+          </motion.div>
+        </Container>
+      </div>
+
+      <Container className="py-8">
+        {/* Category filters */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-8"
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant={!categorySlug ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleCategoryClick(null)}
+              className={cn(
+                "rounded-full transition-all",
+                !categorySlug && "shadow-md shadow-primary/20"
+              )}
+            >
+              All Courses
+            </Button>
+            <Button
+              variant={freeOnly ? "default" : "outline"}
+              size="sm"
+              onClick={handleFreeToggle}
+              className={cn(
+                "rounded-full transition-all",
+                freeOnly ? "bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-500/20" : ""
+              )}
+            >
+              <span className="mr-1">🆓</span> Free
+            </Button>
+            <div className="h-6 w-px bg-border mx-1" />
+            {categoriesLoading ? (
+              <div className="flex gap-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-8 w-20 animate-pulse rounded-full bg-muted" />
+                ))}
+              </div>
+            ) : (
+              categories.slice(0, 6).map((category) => (
+                <Button
+                  key={category.id}
+                  variant={categorySlug === category.slug ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleCategoryClick(category.slug)}
+                  className={cn(
+                    "rounded-full transition-all",
+                    categorySlug === category.slug && "shadow-md shadow-primary/20"
+                  )}
+                >
+                  {category.name}
+                  {category.courseCount > 0 && (
+                    <span className="ml-1.5 text-xs opacity-60">({category.courseCount})</span>
+                  )}
+                </Button>
+              ))
+            )}
+            {categories.length > 6 && (
+              <Link to="/categories">
+                <Button variant="ghost" size="sm" className="rounded-full">
+                  View All →
+                </Button>
+              </Link>
+            )}
           </div>
-        </form>
+        </motion.div>
 
-        <div className="mb-6 flex flex-wrap items-center gap-2">
-          <Button
-            variant={!categorySlug ? "default" : "outline"}
-            size="sm"
-            onClick={() => handleCategoryClick(null)}
-          >
-            All
-          </Button>
-          <Button
-            variant={freeOnly ? "default" : "outline"}
-            size="sm"
-            onClick={handleFreeToggle}
-            className={freeOnly ? "bg-emerald-600 hover:bg-emerald-700" : ""}
-          >
-            Free
-          </Button>
-          <div className="h-6 w-px bg-border" />
-          {categoriesLoading ? (
-            <div className="h-8 w-32 animate-pulse rounded bg-muted" />
-          ) : (
-            categories.slice(0, 8).map((category) => (
-              <Button
-                key={category.id}
-                variant={categorySlug === category.slug ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleCategoryClick(category.slug)}
-              >
-                {category.name}
-                {category.courseCount > 0 && (
-                  <span className="ml-1 text-xs opacity-70">({category.courseCount})</span>
-                )}
-              </Button>
-            ))
-          )}
-          {categories.length > 8 && (
-            <Link to="/categories">
-              <Button variant="ghost" size="sm">
-                View All
-              </Button>
-            </Link>
-          )}
-        </div>
-
+        {/* Selected category banner */}
         {selectedCategory && (
-          <div className="mb-6 rounded-lg border border-border bg-muted/30 p-4">
-            <div className="flex items-center gap-3">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 rounded-2xl border border-border/50 bg-gradient-to-r from-primary/5 to-transparent p-5"
+          >
+            <div className="flex items-center gap-4">
               <div
-                className="flex h-10 w-10 items-center justify-center rounded-lg"
+                className="flex h-12 w-12 items-center justify-center rounded-xl shadow-lg"
                 style={{ backgroundColor: selectedCategory.color || "#3B82F6" }}
               >
-                <CategoryIcon icon={selectedCategory.icon} className="h-5 w-5 text-white" />
+                <CategoryIcon icon={selectedCategory.icon} className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h2 className="font-semibold">{selectedCategory.name}</h2>
+                <h2 className="text-xl font-semibold">{selectedCategory.name}</h2>
                 {selectedCategory.description && (
                   <p className="text-sm text-muted-foreground">{selectedCategory.description}</p>
                 )}
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
 
+        {/* Search results banner */}
         {searchQuery && (
-          <div className="mb-6">
-            <p className="text-sm text-muted-foreground">
-              Search results for "<span className="font-medium text-foreground">{searchQuery}</span>"
-              {pagination && ` (${pagination.total} results)`}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mb-6"
+          >
+            <p className="text-muted-foreground">
+              Showing results for{" "}
+              <span className="font-medium text-foreground">"{searchQuery}"</span>
+              {pagination && (
+                <span className="ml-2 text-sm">({pagination.total} found)</span>
+              )}
             </p>
-          </div>
+          </motion.div>
         )}
 
+        {/* Course grid */}
         {coursesLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="text-center">
-              <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
-              <p className="text-muted-foreground">Loading courses...</p>
-            </div>
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <CourseCardSkeleton key={i} />
+            ))}
           </div>
         ) : courses.length > 0 ? (
           <>
-            <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={staggerContainer}
+              className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+            >
               {courses.map((course) => (
-                <CourseCard key={course.id} course={course} />
+                <motion.div key={course.id} variants={fadeInUp}>
+                  <CourseCard course={course} />
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
 
+            {/* Pagination */}
             {pagination && pagination.totalPages > 1 && (
-              <div className="mt-8 flex justify-center gap-2">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="mt-12 flex justify-center gap-2"
+              >
                 <Button
                   variant="outline"
                   size="sm"
                   disabled={page <= 1}
                   onClick={() => handlePageChange(page - 1)}
+                  className="rounded-full"
                 >
-                  Previous
+                  ← Previous
                 </Button>
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
@@ -204,10 +320,13 @@ export function ExplorePage() {
                     return (
                       <Button
                         key={pageNum}
-                        variant={page === pageNum ? "default" : "outline"}
+                        variant={page === pageNum ? "default" : "ghost"}
                         size="sm"
                         onClick={() => handlePageChange(pageNum)}
-                        className="w-10"
+                        className={cn(
+                          "w-10 h-10 rounded-full",
+                          page === pageNum && "shadow-md shadow-primary/20"
+                        )}
                       >
                         {pageNum}
                       </Button>
@@ -219,22 +338,27 @@ export function ExplorePage() {
                   size="sm"
                   disabled={page >= pagination.totalPages}
                   onClick={() => handlePageChange(page + 1)}
+                  className="rounded-full"
                 >
-                  Next
+                  Next →
                 </Button>
-              </div>
+              </motion.div>
             )}
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="mb-4 rounded-full bg-muted p-4">
-              <BookIcon className="h-8 w-8 text-muted-foreground" />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center justify-center py-20 text-center"
+          >
+            <div className="mb-6 rounded-full bg-primary/10 p-6">
+              <BookIcon className="h-12 w-12 text-primary" />
             </div>
-            <h3 className="mb-2 font-semibold">No courses found</h3>
-            <p className="mb-4 text-sm text-muted-foreground">
+            <h3 className="mb-2 text-xl font-semibold">No courses found</h3>
+            <p className="mb-6 text-muted-foreground max-w-md">
               {searchQuery || categorySlug
-                ? "Try adjusting your filters or search terms."
-                : "Be the first to publish a course!"}
+                ? "Try adjusting your filters or search terms to find what you're looking for."
+                : "Be the first to publish a course and start earning!"}
             </p>
             {(searchQuery || categorySlug) && (
               <Button
@@ -243,11 +367,12 @@ export function ExplorePage() {
                   setSearchParams({});
                   setSearchInput("");
                 }}
+                className="rounded-full"
               >
                 Clear Filters
               </Button>
             )}
-          </div>
+          </motion.div>
         )}
       </Container>
     </div>
@@ -282,70 +407,108 @@ function CourseCard({ course }: CourseCardProps) {
   const truncateAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
 
   return (
-    <Link to={`/course/${course.id}`}>
-      <Card className="group h-full overflow-hidden transition-all hover:shadow-lg hover:border-primary/50">
+    <Link to={`/course/${course.id}`} className="block group">
+      <Card className="h-full overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:border-primary/30 hover:-translate-y-1">
         <div className="relative aspect-video overflow-hidden bg-muted">
           {course.thumbnail ? (
             <img
               src={course.thumbnail}
               alt={course.title}
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <BookIcon className="h-12 w-12 text-muted-foreground/50" />
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
+              <BookIcon className="h-16 w-16 text-primary/30" />
             </div>
           )}
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          
+          {/* Price badge */}
           <div className="absolute right-3 top-3">
             {course.isFree ? (
-              <Badge className="bg-emerald-500 text-white">Free</Badge>
+              <Badge className="bg-emerald-500 text-white border-0 shadow-lg">
+                Free
+              </Badge>
             ) : (
-              <Badge variant="secondary" className="bg-background/90 backdrop-blur">
+              <Badge className="bg-background/95 backdrop-blur-sm border-0 shadow-lg text-foreground">
                 ${Number(course.priceUsd).toFixed(0)}
               </Badge>
             )}
           </div>
+
+          {/* Lesson count - shows on hover */}
+          <div className="absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <Badge variant="secondary" className="bg-black/60 text-white border-0 backdrop-blur-sm">
+              {course.lessonCount} lessons
+            </Badge>
+          </div>
         </div>
+
         <CardHeader className="pb-2">
           {course.categories && course.categories.length > 0 && (
-            <div className="mb-2 flex flex-wrap gap-1">
+            <div className="mb-2 flex flex-wrap gap-1.5">
               {course.categories.slice(0, 2).map((cat) => (
                 <Badge
                   key={cat.id}
                   variant="outline"
-                  className="text-xs"
-                  style={{ borderColor: cat.color || undefined, color: cat.color || undefined }}
+                  className="text-xs rounded-full px-2.5"
+                  style={{ 
+                    borderColor: cat.color || undefined, 
+                    color: cat.color || undefined,
+                    backgroundColor: cat.color ? `${cat.color}10` : undefined
+                  }}
                 >
                   {cat.name}
                 </Badge>
               ))}
             </div>
           )}
-          <CardTitle className="line-clamp-2 text-lg">{course.title}</CardTitle>
+          <CardTitle className="line-clamp-2 text-lg group-hover:text-primary transition-colors">
+            {course.title}
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              {course.creator?.avatar ? (
-                <img
-                  src={course.creator.avatar}
-                  alt=""
-                  className="h-5 w-5 rounded-full object-cover"
-                />
-              ) : (
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs font-medium">
-                  {(course.creator?.username || course.creator?.address || "?")[0].toUpperCase()}
-                </div>
-              )}
-              <span className="truncate">
-                {course.creator?.username || truncateAddress(course.creator?.address || "")}
-              </span>
-            </div>
-            <span>{course.lessonCount} lessons</span>
+
+        <CardContent className="pt-0">
+          <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+            {course.creator?.avatar ? (
+              <img
+                src={course.creator.avatar}
+                alt=""
+                className="h-6 w-6 rounded-full object-cover ring-2 ring-background"
+              />
+            ) : (
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-primary to-blue-600 text-xs font-medium text-white ring-2 ring-background">
+                {(course.creator?.username || course.creator?.address || "?")[0].toUpperCase()}
+              </div>
+            )}
+            <span className="truncate font-medium">
+              {course.creator?.username || truncateAddress(course.creator?.address || "")}
+            </span>
           </div>
         </CardContent>
       </Card>
     </Link>
+  );
+}
+
+function CourseCardSkeleton() {
+  return (
+    <Card className="h-full overflow-hidden">
+      <div className="aspect-video bg-muted shimmer" />
+      <CardHeader className="pb-2">
+        <div className="flex gap-2 mb-2">
+          <div className="h-5 w-16 rounded-full bg-muted shimmer" />
+        </div>
+        <div className="h-6 w-3/4 rounded bg-muted shimmer" />
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="flex items-center gap-2">
+          <div className="h-6 w-6 rounded-full bg-muted shimmer" />
+          <div className="h-4 w-24 rounded bg-muted shimmer" />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

@@ -67,7 +67,7 @@ export function Layout() {
           isCollapsed ? "lg:pl-20" : "lg:pl-64"
         )}>
           <TopBar onMenuClick={() => setMobileOpen(true)} />
-          <main className="flex-1 overflow-y-auto">
+          <main className="flex-1 overflow-y-auto bg-gradient-animated scrollbar-thin">
             <Outlet />
           </main>
         </div>

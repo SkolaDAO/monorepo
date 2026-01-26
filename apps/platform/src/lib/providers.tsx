@@ -8,7 +8,19 @@ import { AuthProvider } from "../contexts/AuthContext";
 
 import "@rainbow-me/rainbowkit/styles.css";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Prevent serialization issues with DOM elements
+      structuralSharing: false,
+      retry: (failureCount, error) => {
+        // Don't retry on 4xx errors
+        if (error instanceof Error && error.message.includes('40')) return false;
+        return failureCount < 3;
+      },
+    },
+  },
+});
 
 function RainbowKitThemeProvider({ children }: { children: ReactNode }) {
   const { theme } = useTheme();

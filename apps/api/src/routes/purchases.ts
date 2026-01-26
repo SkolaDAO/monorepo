@@ -84,13 +84,20 @@ purchasesRouter.post("/record", authMiddleware, zValidator("json", recordPurchas
 
   if (referrerId && referralEarning) {
     await db
-      .update(referralStats)
-      .set({
-        totalReferrals: sql`${referralStats.totalReferrals} + 1`,
-        totalEarningsUsd: sql`${referralStats.totalEarningsUsd} + ${referralEarning}`,
-        updatedAt: new Date(),
+      .insert(referralStats)
+      .values({
+        userId: referrerId,
+        totalReferrals: 1,
+        totalEarningsUsd: referralEarning,
       })
-      .where(eq(referralStats.userId, referrerId));
+      .onConflictDoUpdate({
+        target: referralStats.userId,
+        set: {
+          totalReferrals: sql`${referralStats.totalReferrals} + 1`,
+          totalEarningsUsd: sql`${referralStats.totalEarningsUsd} + ${referralEarning}`,
+          updatedAt: new Date(),
+        },
+      });
 
     await db.insert(notifications).values({
       userId: referrerId,

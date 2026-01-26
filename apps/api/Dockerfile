@@ -30,6 +30,6 @@ RUN pnpm install --frozen-lockfile --filter api --prod
 
 WORKDIR /app/apps/api
 
-EXPOSE 3001
+EXPOSE 80
 
 CMD ["node", "dist/index.js"]

@@ -16,8 +16,9 @@ RUN pnpm install --frozen-lockfile --filter platform...
 COPY apps/platform ./apps/platform
 COPY packages/ui ./packages/ui
 
-# Build with hardcoded production API URL
+# Build with production environment
 ENV VITE_API_URL=https://api.skola.academy
+ENV VITE_WALLET_CONNECT_PROJECT_ID=062761bc46d462832043929c0be8013c
 
 # Build
 RUN pnpm --filter platform build

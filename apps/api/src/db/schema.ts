@@ -530,3 +530,53 @@ export const lessonProgressRelations = relations(lessonProgress, ({ one }) => ({
     references: [courses.id],
   }),
 }));
+
+// Analytics tracking
+export const analyticsEventTypeEnum = pgEnum("analytics_event_type", [
+  "course_view",
+  "chapter_view", 
+  "lesson_view",
+  "course_purchase",
+  "chat_join",
+]);
+
+export const analyticsEvents = pgTable(
+  "analytics_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    eventType: analyticsEventTypeEnum("event_type").notNull(),
+    userId: uuid("user_id").references(() => users.id),
+    courseId: uuid("course_id").references(() => courses.id),
+    chapterId: uuid("chapter_id").references(() => chapters.id),
+    lessonId: uuid("lesson_id").references(() => lessons.id),
+    sessionId: text("session_id"),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("analytics_events_type_idx").on(table.eventType),
+    index("analytics_events_course_idx").on(table.courseId),
+    index("analytics_events_user_idx").on(table.userId),
+    index("analytics_events_created_idx").on(table.createdAt),
+    index("analytics_events_course_type_idx").on(table.courseId, table.eventType),
+  ]
+);
+
+export const analyticsEventsRelations = relations(analyticsEvents, ({ one }) => ({
+  user: one(users, {
+    fields: [analyticsEvents.userId],
+    references: [users.id],
+  }),
+  course: one(courses, {
+    fields: [analyticsEvents.courseId],
+    references: [courses.id],
+  }),
+  chapter: one(chapters, {
+    fields: [analyticsEvents.chapterId],
+    references: [chapters.id],
+  }),
+  lesson: one(lessons, {
+    fields: [analyticsEvents.lessonId],
+    references: [lessons.id],
+  }),
+}));

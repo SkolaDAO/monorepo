@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
-import * as DOMPurify from "dompurify";
+import DOMPurify from "dompurify";
 import Prism from "prismjs";
 import "prismjs/components/prism-solidity";
 import "prismjs/components/prism-typescript";
@@ -24,7 +24,7 @@ DOMPurify.setConfig({
 });
 
 // Hook to sanitize URLs - only allow http/https
-DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+DOMPurify.addHook('afterSanitizeAttributes', (node: Element) => {
   if (node.tagName === 'A') {
     const href = node.getAttribute('href') || '';
     // Only allow http, https, and relative URLs - block javascript:, data:, etc.

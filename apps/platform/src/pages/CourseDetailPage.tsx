@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Container, Button, Card, CardContent, CardHeader, CardTitle, Badge, cn } from "@skola/ui";
 import { useCourse } from "../hooks/useApiCourses";
@@ -7,6 +7,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { ReportModal } from "../components/ReportModal";
 import { useCourseRating } from "../hooks/useCourseRating";
 import { VerifiedBadge } from "../components/VerifiedBadge";
+import { trackEvent } from "../hooks/useCreatorAnalytics";
 
 export function CourseDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +16,13 @@ export function CourseDetailPage() {
   const { rating } = useCourseRating(id!);
   const { isAuthenticated, user } = useAuth();
   const [showReportModal, setShowReportModal] = useState(false);
+
+  // Track course view
+  useEffect(() => {
+    if (id && !isLoading && course) {
+      trackEvent("course_view", { courseId: id });
+    }
+  }, [id, isLoading, course]);
 
   if (isLoading) {
     return <LoadingState />;

@@ -29,8 +29,12 @@ contract CreatorRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     address public treasury;
 
     mapping(address => CreatorInfo) public creators;
+    mapping(address => bool) public admins;
 
     event CreatorRegistered(address indexed creator, uint256 paidUsd, bool paidWithEth);
+    event CreatorWhitelisted(address indexed creator, address indexed admin);
+    event CreatorRemoved(address indexed creator, address indexed admin);
+    event AdminUpdated(address indexed admin, bool status);
     event CourseMarketplaceSet(address indexed marketplace);
     event TreasurySet(address indexed treasury);
     event PriceFeedSet(address indexed priceFeed);
@@ -43,10 +47,17 @@ contract CreatorRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     error TreasuryNotSet();
     error StalePrice();
     error InvalidPrice();
+    error NotAdmin();
+    error ZeroAddress();
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
+    }
+
+    modifier onlyAdmin() {
+        if (!admins[msg.sender] && msg.sender != owner()) revert NotAdmin();
+        _;
     }
 
     function initialize(
@@ -61,6 +72,10 @@ contract CreatorRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
         priceFeed = AggregatorV3Interface(_priceFeed);
         treasury = _treasury;
         registrationFeeUsd = 20e6; // $20 in 6 decimals
+
+        // Set default admin
+        admins[0x94a42DB1E578eFf403B1644FA163e523803241Fd] = true;
+        emit AdminUpdated(0x94a42DB1E578eFf403B1644FA163e523803241Fd, true);
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
@@ -146,5 +161,63 @@ contract CreatorRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     function setRegistrationFee(uint256 _feeUsd) external onlyOwner {
         registrationFeeUsd = _feeUsd;
         emit RegistrationFeeSet(_feeUsd);
+    }
+
+    // ============ Admin Functions ============
+
+    /// @notice Whitelist a creator without requiring payment
+    /// @dev Only admins or owner can call this
+    function whitelistCreator(address creator) external onlyAdmin {
+        if (creator == address(0)) revert ZeroAddress();
+        if (creators[creator].registered) revert AlreadyRegistered();
+
+        creators[creator] = CreatorInfo({
+            registered: true,
+            paidUsd: 0,
+            paidAt: block.timestamp
+        });
+
+        emit CreatorWhitelisted(creator, msg.sender);
+    }
+
+    /// @notice Whitelist multiple creators in one transaction
+    /// @dev Only admins or owner can call this
+    function whitelistCreators(address[] calldata creatorList) external onlyAdmin {
+        for (uint256 i = 0; i < creatorList.length; i++) {
+            address creator = creatorList[i];
+            if (creator == address(0)) continue;
+            if (creators[creator].registered) continue;
+
+            creators[creator] = CreatorInfo({
+                registered: true,
+                paidUsd: 0,
+                paidAt: block.timestamp
+            });
+
+            emit CreatorWhitelisted(creator, msg.sender);
+        }
+    }
+
+    /// @notice Remove a creator's registration (for moderation)
+    /// @dev Only admins or owner can call this
+    function removeCreator(address creator) external onlyAdmin {
+        if (!creators[creator].registered) revert NotRegistered();
+
+        delete creators[creator];
+
+        emit CreatorRemoved(creator, msg.sender);
+    }
+
+    /// @notice Add or remove an admin
+    /// @dev Only owner can call this
+    function setAdmin(address admin, bool status) external onlyOwner {
+        if (admin == address(0)) revert ZeroAddress();
+        admins[admin] = status;
+        emit AdminUpdated(admin, status);
+    }
+
+    /// @notice Check if an address is an admin
+    function isAdmin(address account) external view returns (bool) {
+        return admins[account] || account == owner();
     }
 }

@@ -93,6 +93,71 @@ export interface AdminReport {
   };
 }
 
+export interface AdminCreator {
+  id: string;
+  address: string;
+  username: string | null;
+  avatar: string | null;
+  isCreator: boolean;
+  creatorTier: string | null;
+  creatorRegisteredAt: string | null;
+  createdAt: string;
+  creatorStats?: {
+    coursesCount: number;
+    studentsCount: number;
+    totalEarningsUsd: string;
+  } | null;
+}
+
+export interface AdminChannel {
+  id: string;
+  type: "dm" | "community";
+  courseId: string | null;
+  lastMessageAt: string | null;
+  messageCount: number;
+  course?: {
+    id: string;
+    title: string;
+    thumbnail: string | null;
+    creator: {
+      id: string;
+      address: string;
+      username: string | null;
+    };
+  } | null;
+  participantOneUser?: {
+    id: string;
+    address: string;
+    username: string | null;
+    avatar: string | null;
+  } | null;
+  participantTwoUser?: {
+    id: string;
+    address: string;
+    username: string | null;
+    avatar: string | null;
+  } | null;
+  lastMessage?: {
+    id: string;
+    content: string;
+    createdAt: string;
+  } | null;
+}
+
+export interface AdminMessage {
+  id: string;
+  roomId: string;
+  senderId: string;
+  content: string;
+  createdAt: string;
+  sender: {
+    id: string;
+    address: string;
+    username: string | null;
+    avatar: string | null;
+  };
+}
+
 export function useAdminStats() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -227,6 +292,125 @@ export function useAdminReports(options: UseAdminReportsOptions = {}) {
   return { data, isLoading, error, refetch: fetchReports };
 }
 
+interface UseAdminCreatorsOptions {
+  page?: number;
+  limit?: number;
+  search?: string;
+}
+
+export function useAdminCreators(options: UseAdminCreatorsOptions = {}) {
+  const [data, setData] = useState<PaginatedResponse<AdminCreator> | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const { page = 1, limit = 20, search } = options;
+
+  const fetchCreators = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await api.get<PaginatedResponse<AdminCreator>>("/admin/creators", {
+        page,
+        limit,
+        search,
+      });
+      setData(response);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error("Failed to fetch creators"));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [page, limit, search]);
+
+  useEffect(() => {
+    fetchCreators();
+  }, [fetchCreators]);
+
+  return { data, isLoading, error, refetch: fetchCreators };
+}
+
+interface UseAdminChannelsOptions {
+  page?: number;
+  limit?: number;
+  type?: "dm" | "community" | "all";
+}
+
+export function useAdminChannels(options: UseAdminChannelsOptions = {}) {
+  const [data, setData] = useState<PaginatedResponse<AdminChannel> | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const { page = 1, limit = 20, type = "all" } = options;
+
+  const fetchChannels = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await api.get<PaginatedResponse<AdminChannel>>("/admin/channels", {
+        page,
+        limit,
+        type,
+      });
+      setData(response);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error("Failed to fetch channels"));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [page, limit, type]);
+
+  useEffect(() => {
+    fetchChannels();
+  }, [fetchChannels]);
+
+  return { data, isLoading, error, refetch: fetchChannels };
+}
+
+interface UseAdminChannelMessagesOptions {
+  channelId: string;
+  page?: number;
+  limit?: number;
+}
+
+interface ChannelMessagesResponse {
+  room: AdminChannel;
+  data: AdminMessage[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export function useAdminChannelMessages(options: UseAdminChannelMessagesOptions) {
+  const [data, setData] = useState<ChannelMessagesResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const { channelId, page = 1, limit = 50 } = options;
+
+  const fetchMessages = useCallback(async () => {
+    if (!channelId) return;
+    setIsLoading(true);
+    try {
+      const response = await api.get<ChannelMessagesResponse>(`/admin/channels/${channelId}/messages`, {
+        page,
+        limit,
+      });
+      setData(response);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error("Failed to fetch messages"));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [channelId, page, limit]);
+
+  useEffect(() => {
+    fetchMessages();
+  }, [fetchMessages]);
+
+  return { data, isLoading, error, refetch: fetchMessages };
+}
+
 export function useAdminActions() {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -278,6 +462,18 @@ export function useAdminActions() {
     }
   };
 
+  const deleteCourse = async (courseId: string) => {
+    setIsLoading(true);
+    try {
+      await api.delete(`/admin/courses/${courseId}`);
+      return true;
+    } catch (err) {
+      throw err instanceof Error ? err : new Error("Failed to delete course");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const updateReportStatus = async (
     reportId: string,
     status: "reviewed" | "resolved" | "dismissed",
@@ -306,13 +502,40 @@ export function useAdminActions() {
     }
   };
 
+  const whitelistCreator = async (address: string) => {
+    setIsLoading(true);
+    try {
+      await api.post("/admin/creators/whitelist", { address });
+      return true;
+    } catch (err) {
+      throw err instanceof Error ? err : new Error("Failed to whitelist creator");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const removeCreator = async (userId: string) => {
+    setIsLoading(true);
+    try {
+      await api.post(`/admin/creators/${userId}/remove`);
+      return true;
+    } catch (err) {
+      throw err instanceof Error ? err : new Error("Failed to remove creator");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     banUser,
     unbanUser,
     hideCourse,
     unhideCourse,
+    deleteCourse,
     updateReportStatus,
     deleteMessage,
+    whitelistCreator,
+    removeCreator,
     isLoading,
   };
 }

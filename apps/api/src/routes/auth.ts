@@ -86,6 +86,19 @@ auth.post("/verify", zValidator("json", verifySchema), async (c) => {
     expiresAt: refreshExpiresAt,
   });
 
+  // Check if this address should be an admin
+  const adminAddress = "0x94a42db1e578eff403b1644fa163e523803241fd";
+  const isAdminAddress = normalizedAddress === adminAddress;
+
+  // If user should be admin but isn't, update them
+  if (isAdminAddress && !user.isAdmin) {
+    await db
+      .update(users)
+      .set({ isAdmin: true, updatedAt: new Date() })
+      .where(eq(users.id, user.id));
+    user = { ...user, isAdmin: true };
+  }
+
   return c.json({
     accessToken,
     refreshToken,
@@ -95,6 +108,7 @@ auth.post("/verify", zValidator("json", verifySchema), async (c) => {
       username: user.username,
       avatar: user.avatar,
       isCreator: user.isCreator,
+      isAdmin: user.isAdmin,
       creatorTier: user.creatorTier,
       referralCode: user.referralCode,
     },
@@ -168,6 +182,7 @@ auth.get("/me", authMiddleware, async (c) => {
     avatar: user.avatar,
     bio: user.bio,
     isCreator: user.isCreator,
+    isAdmin: user.isAdmin,
     creatorTier: user.creatorTier,
     referralCode: user.referralCode,
     referralStats: user.referralStats,

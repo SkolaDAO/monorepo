@@ -7,13 +7,18 @@ import {
   useAdminUsers,
   useAdminCourses,
   useAdminReports,
+  useAdminCreators,
+  useAdminChannels,
+  useAdminChannelMessages,
   useAdminActions,
   type AdminUser,
   type AdminCourse,
   type AdminReport,
+  type AdminCreator,
+  type AdminChannel,
 } from "../hooks/useAdmin";
 
-type Tab = "overview" | "users" | "courses" | "reports";
+type Tab = "overview" | "users" | "courses" | "reports" | "creators" | "messages";
 
 export function AdminPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -43,11 +48,13 @@ export function AdminPage() {
             </div>
           </div>
 
-          <div className="flex gap-1 -mb-px">
+          <div className="flex gap-1 -mb-px overflow-x-auto">
             {[
               { id: "overview" as Tab, label: "Overview", icon: ChartIcon },
               { id: "users" as Tab, label: "Users", icon: UsersIcon },
+              { id: "creators" as Tab, label: "Creators", icon: StarIcon },
               { id: "courses" as Tab, label: "Courses", icon: BookIcon },
+              { id: "messages" as Tab, label: "Messages", icon: MessageIcon },
               { id: "reports" as Tab, label: "Reports", icon: FlagIcon },
             ].map((tab) => (
               <button
@@ -72,7 +79,9 @@ export function AdminPage() {
         <div className="py-6">
           {activeTab === "overview" && <OverviewTab />}
           {activeTab === "users" && <UsersTab />}
+          {activeTab === "creators" && <CreatorsTab />}
           {activeTab === "courses" && <CoursesTab />}
+          {activeTab === "messages" && <MessagesTab />}
           {activeTab === "reports" && <ReportsTab />}
         </div>
       </Container>
@@ -268,8 +277,8 @@ function CoursesTab() {
   const [filter, setFilter] = useState<"all" | "true" | "false">("all");
   const [page, setPage] = useState(1);
   const { data, isLoading, refetch } = useAdminCourses({ page, hidden: filter });
-  const { hideCourse, unhideCourse, isLoading: actionLoading } = useAdminActions();
-  const [actionModal, setActionModal] = useState<{ type: "hide" | "unhide"; course: AdminCourse } | null>(null);
+  const { hideCourse, unhideCourse, deleteCourse, isLoading: actionLoading } = useAdminActions();
+  const [actionModal, setActionModal] = useState<{ type: "hide" | "unhide" | "delete"; course: AdminCourse } | null>(null);
   const [reason, setReason] = useState("");
 
   const handleAction = async () => {
@@ -277,8 +286,10 @@ function CoursesTab() {
     try {
       if (actionModal.type === "hide") {
         await hideCourse(actionModal.course.id, reason);
-      } else {
+      } else if (actionModal.type === "unhide") {
         await unhideCourse(actionModal.course.id);
+      } else if (actionModal.type === "delete") {
+        await deleteCourse(actionModal.course.id);
       }
       setActionModal(null);
       setReason("");
@@ -340,13 +351,23 @@ function CoursesTab() {
                       </div>
                     </div>
 
-                    <Button
-                      variant={course.isHidden ? "outline" : "destructive"}
-                      size="sm"
-                      onClick={() => setActionModal({ type: course.isHidden ? "unhide" : "hide", course })}
-                    >
-                      {course.isHidden ? "Unhide" : "Hide"}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant={course.isHidden ? "outline" : "destructive"}
+                        size="sm"
+                        onClick={() => setActionModal({ type: course.isHidden ? "unhide" : "hide", course })}
+                      >
+                        {course.isHidden ? "Unhide" : "Hide"}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setActionModal({ type: "delete", course })}
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -365,15 +386,27 @@ function CoursesTab() {
 
       {actionModal && (
         <Modal
-          title={actionModal.type === "hide" ? "Hide Course" : "Unhide Course"}
+          title={
+            actionModal.type === "hide"
+              ? "Hide Course"
+              : actionModal.type === "unhide"
+              ? "Unhide Course"
+              : "Delete Course"
+          }
           onClose={() => {
             setActionModal(null);
             setReason("");
           }}
           onConfirm={handleAction}
           isLoading={actionLoading}
-          confirmLabel={actionModal.type === "hide" ? "Hide Course" : "Unhide Course"}
-          confirmVariant={actionModal.type === "hide" ? "destructive" : "default"}
+          confirmLabel={
+            actionModal.type === "hide"
+              ? "Hide Course"
+              : actionModal.type === "unhide"
+              ? "Unhide Course"
+              : "Delete Course"
+          }
+          confirmVariant={actionModal.type === "unhide" ? "default" : "destructive"}
         >
           {actionModal.type === "hide" ? (
             <div className="space-y-4">
@@ -392,10 +425,23 @@ function CoursesTab() {
                 />
               </div>
             </div>
-          ) : (
+          ) : actionModal.type === "unhide" ? (
             <p className="text-sm text-muted-foreground">
               Are you sure you want to unhide <strong>{actionModal.course.title}</strong>?
             </p>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Are you sure you want to <strong className="text-destructive">permanently delete</strong>{" "}
+                <strong>{actionModal.course.title}</strong>?
+              </p>
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                <p className="text-xs text-destructive">
+                  <strong>Warning:</strong> This action cannot be undone. The course will be hidden
+                  and marked as deleted. The creator will be notified.
+                </p>
+              </div>
+            </div>
           )}
         </Modal>
       )}
@@ -597,6 +643,387 @@ function ReportsTab() {
   );
 }
 
+function CreatorsTab() {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [whitelistAddress, setWhitelistAddress] = useState("");
+  const { data, isLoading, refetch } = useAdminCreators({ page, search: search || undefined });
+  const { whitelistCreator, removeCreator, isLoading: actionLoading } = useAdminActions();
+  const [showWhitelistModal, setShowWhitelistModal] = useState(false);
+  const [removeModal, setRemoveModal] = useState<AdminCreator | null>(null);
+
+  const handleWhitelist = async () => {
+    if (!whitelistAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
+      return;
+    }
+    try {
+      await whitelistCreator(whitelistAddress);
+      setWhitelistAddress("");
+      setShowWhitelistModal(false);
+      refetch();
+    } catch {}
+  };
+
+  const handleRemove = async () => {
+    if (!removeModal) return;
+    try {
+      await removeCreator(removeModal.id);
+      setRemoveModal(null);
+      refetch();
+    } catch {}
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center gap-4">
+        <input
+          type="text"
+          placeholder="Search by address or username..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          className="flex-1 min-w-[200px] px-3 py-2 rounded-lg border border-border bg-background text-sm"
+        />
+        <Button onClick={() => setShowWhitelistModal(true)}>
+          <PlusIcon className="h-4 w-4 mr-2" />
+          Whitelist Creator
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="text-center py-12 text-muted-foreground">Loading creators...</div>
+      ) : !data?.data.length ? (
+        <div className="text-center py-12 text-muted-foreground">No creators found</div>
+      ) : (
+        <>
+          <div className="space-y-3">
+            {data.data.map((creator) => (
+              <Card key={creator.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-muted overflow-hidden">
+                        {creator.avatar ? (
+                          <img src={creator.avatar} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center text-sm font-medium">
+                            {(creator.username || creator.address)[0].toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">
+                            {creator.username || truncateAddress(creator.address)}
+                          </span>
+                          {creator.creatorTier && (
+                            <Badge variant="secondary">{creator.creatorTier}</Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">{creator.address}</p>
+                        {creator.creatorStats && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {creator.creatorStats.coursesCount} courses · {creator.creatorStats.studentsCount} students
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setRemoveModal(creator)}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {data.pagination.totalPages > 1 && (
+            <Pagination
+              page={page}
+              totalPages={data.pagination.totalPages}
+              onPageChange={setPage}
+            />
+          )}
+        </>
+      )}
+
+      {showWhitelistModal && (
+        <Modal
+          title="Whitelist Creator"
+          onClose={() => {
+            setShowWhitelistModal(false);
+            setWhitelistAddress("");
+          }}
+          onConfirm={handleWhitelist}
+          isLoading={actionLoading}
+          confirmLabel="Whitelist"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Enter the wallet address to whitelist as a creator. This will allow them to create
+              courses without paying the registration fee.
+            </p>
+            <div>
+              <label className="text-sm font-medium">Wallet Address</label>
+              <input
+                type="text"
+                value={whitelistAddress}
+                onChange={(e) => setWhitelistAddress(e.target.value)}
+                placeholder="0x..."
+                className="mt-1 w-full px-3 py-2 rounded-lg border border-border bg-background text-sm font-mono"
+              />
+              {whitelistAddress && !whitelistAddress.match(/^0x[a-fA-F0-9]{40}$/) && (
+                <p className="text-xs text-destructive mt-1">Invalid Ethereum address</p>
+              )}
+            </div>
+            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                <strong>Note:</strong> You may also need to whitelist them on-chain using the
+                CreatorRegistry contract's <code>whitelistCreator</code> function.
+              </p>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {removeModal && (
+        <Modal
+          title="Remove Creator"
+          onClose={() => setRemoveModal(null)}
+          onConfirm={handleRemove}
+          isLoading={actionLoading}
+          confirmLabel="Remove Creator"
+          confirmVariant="destructive"
+        >
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to remove creator status from{" "}
+            <strong>{removeModal.username || truncateAddress(removeModal.address)}</strong>?
+          </p>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function MessagesTab() {
+  const [filter, setFilter] = useState<"all" | "dm" | "community">("all");
+  const [page, setPage] = useState(1);
+  const [selectedChannel, setSelectedChannel] = useState<AdminChannel | null>(null);
+  const { data, isLoading } = useAdminChannels({ page, type: filter });
+
+  return (
+    <div className="space-y-6">
+      {!selectedChannel ? (
+        <>
+          <div className="flex items-center gap-4">
+            <select
+              value={filter}
+              onChange={(e) => {
+                setFilter(e.target.value as typeof filter);
+                setPage(1);
+              }}
+              className="px-3 py-2 rounded-lg border border-border bg-background text-sm"
+            >
+              <option value="all">All Channels</option>
+              <option value="community">Course Channels</option>
+              <option value="dm">Direct Messages</option>
+            </select>
+          </div>
+
+          {isLoading ? (
+            <div className="text-center py-12 text-muted-foreground">Loading channels...</div>
+          ) : !data?.data.length ? (
+            <div className="text-center py-12 text-muted-foreground">No channels found</div>
+          ) : (
+            <>
+              <div className="space-y-3">
+                {data.data.map((channel) => (
+                  <Card
+                    key={channel.id}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => setSelectedChannel(channel)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {channel.type === "community" ? (
+                            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                              <BookIcon className="h-5 w-5 text-primary" />
+                            </div>
+                          ) : (
+                            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                              <MessageIcon className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">
+                                {channel.type === "community"
+                                  ? channel.course?.title || "Unknown Course"
+                                  : `${channel.participantOneUser?.username || truncateAddress(channel.participantOneUser?.address)} ↔ ${channel.participantTwoUser?.username || truncateAddress(channel.participantTwoUser?.address)}`}
+                              </span>
+                              <Badge variant="outline" className="text-xs">
+                                {channel.type === "community" ? "Course" : "DM"}
+                              </Badge>
+                            </div>
+                            {channel.lastMessage && (
+                              <p className="text-xs text-muted-foreground line-clamp-1">
+                                {channel.lastMessage.content}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant="secondary">{channel.messageCount} msgs</Badge>
+                          {channel.lastMessageAt && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {new Date(channel.lastMessageAt).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {data.pagination.totalPages > 1 && (
+                <Pagination
+                  page={page}
+                  totalPages={data.pagination.totalPages}
+                  onPageChange={setPage}
+                />
+              )}
+            </>
+          )}
+        </>
+      ) : (
+        <ChannelMessages channel={selectedChannel} onBack={() => setSelectedChannel(null)} />
+      )}
+    </div>
+  );
+}
+
+function ChannelMessages({
+  channel,
+  onBack,
+}: {
+  channel: AdminChannel;
+  onBack: () => void;
+}) {
+  const [page, setPage] = useState(1);
+  const { data, isLoading, refetch } = useAdminChannelMessages({ channelId: channel.id, page });
+  const { deleteMessage, isLoading: actionLoading } = useAdminActions();
+  const [deleteModal, setDeleteModal] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    if (!deleteModal) return;
+    try {
+      await deleteMessage(deleteModal);
+      setDeleteModal(null);
+      refetch();
+    } catch {}
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="outline" size="sm" onClick={onBack}>
+          ← Back to Channels
+        </Button>
+        <div>
+          <h3 className="font-medium">
+            {channel.type === "community"
+              ? channel.course?.title
+              : `DM: ${channel.participantOneUser?.username || truncateAddress(channel.participantOneUser?.address)} ↔ ${channel.participantTwoUser?.username || truncateAddress(channel.participantTwoUser?.address)}`}
+          </h3>
+          <p className="text-xs text-muted-foreground">{channel.messageCount} messages</p>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="text-center py-12 text-muted-foreground">Loading messages...</div>
+      ) : !data?.data.length ? (
+        <div className="text-center py-12 text-muted-foreground">No messages in this channel</div>
+      ) : (
+        <>
+          <div className="space-y-3">
+            {data.data.map((message) => (
+              <Card key={message.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="h-8 w-8 rounded-full bg-muted overflow-hidden shrink-0">
+                        {message.sender.avatar ? (
+                          <img src={message.sender.avatar} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center text-xs font-medium">
+                            {(message.sender.username || message.sender.address)[0].toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm">
+                            {message.sender.username || truncateAddress(message.sender.address)}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(message.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-sm mt-1 break-words">{message.content}</p>
+                      </div>
+                    </div>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive shrink-0"
+                      onClick={() => setDeleteModal(message.id)}
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {data.pagination.totalPages > 1 && (
+            <Pagination
+              page={page}
+              totalPages={data.pagination.totalPages}
+              onPageChange={setPage}
+            />
+          )}
+        </>
+      )}
+
+      {deleteModal && (
+        <Modal
+          title="Delete Message"
+          onClose={() => setDeleteModal(null)}
+          onConfirm={handleDelete}
+          isLoading={actionLoading}
+          confirmLabel="Delete"
+          confirmVariant="destructive"
+        >
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to delete this message? This action cannot be undone.
+          </p>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
 interface ModalProps {
   title: string;
   children: React.ReactNode;
@@ -773,6 +1200,30 @@ function XIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
+}
+
+function MessageIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+    </svg>
+  );
+}
+
+function PlusIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+    </svg>
+  );
+}
+
+function TrashIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
     </svg>
   );
 }

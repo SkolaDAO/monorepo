@@ -32,9 +32,12 @@ export function NovelEditor({ initialContent, onChange, className }: NovelEditor
   const initialJSON = useMemo(() => {
     if (!initialContent) return undefined;
     // Convert markdown to HTML if content looks like markdown
-    const content = looksLikeMarkdown(initialContent) 
-      ? markdownToHtml(initialContent) 
-      : initialContent;
+    // First strip any p-tag wrapping if content is markdown wrapped in HTML
+    let content = initialContent;
+    if (looksLikeMarkdown(initialContent)) {
+      const stripped = stripParagraphTags(initialContent);
+      content = markdownToHtml(stripped);
+    }
     return htmlToJSON(content);
   }, [initialContent]);
 
@@ -176,6 +179,9 @@ function htmlToJSON(html: string): JSONContent | undefined {
 }
 
 function looksLikeMarkdown(text: string): boolean {
+  // First strip any wrapping p tags to check the actual content
+  const stripped = stripParagraphTags(text);
+  
   // Check for common markdown patterns
   const markdownPatterns = [
     /^#{1,6}\s/m,           // Headers
@@ -187,7 +193,20 @@ function looksLikeMarkdown(text: string): boolean {
     /\[.+\]\(.+\)/,         // Links
     /^>/m,                   // Blockquotes
   ];
-  return markdownPatterns.some(pattern => pattern.test(text));
+  return markdownPatterns.some(pattern => pattern.test(stripped));
+}
+
+function stripParagraphTags(html: string): string {
+  // If content is just markdown wrapped in <p> tags, unwrap it
+  return html
+    .replace(/<p>/gi, '')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .trim();
 }
 
 function markdownToHtml(markdown: string): string {

@@ -55,7 +55,23 @@ app.onError((err, c) => {
     return c.json({ error: err.message }, err.status);
   }
 
-  console.error("Unhandled error:", err);
+  // Log full error details for debugging
+  console.error("=== UNHANDLED ERROR ===");
+  console.error("Path:", c.req.path);
+  console.error("Method:", c.req.method);
+  console.error("Error:", err);
+  console.error("Stack:", err instanceof Error ? err.stack : "N/A");
+  console.error("=======================");
+  
+  // In development, return more error details
+  if (env.NODE_ENV === "development") {
+    return c.json({ 
+      error: "Internal server error",
+      message: err instanceof Error ? err.message : String(err),
+      path: c.req.path,
+    }, 500);
+  }
+  
   return c.json({ error: "Internal server error" }, 500);
 });
 

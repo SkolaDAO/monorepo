@@ -29,6 +29,103 @@ function estimateReadingTime(text: string | null | undefined): number {
   return Math.ceil(words / WORDS_PER_MINUTE);
 }
 
+function processLessonContent(content: string | null | undefined): string {
+  if (!content) return "";
+  
+  // If content is markdown wrapped in <p> tags, extract and convert
+  let processed = content;
+  
+  // Check if it looks like markdown wrapped in p tags
+  if (content.includes("<p>") && (content.includes("##") || content.includes("```") || content.includes("- "))) {
+    // Strip p tags and convert markdown to HTML
+    processed = content
+      .replace(/<p>/gi, "")
+      .replace(/<\/p>/gi, "\n")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">");
+    
+    // Convert markdown to HTML
+    processed = markdownToHtml(processed);
+  }
+  
+  return processed;
+}
+
+function markdownToHtml(markdown: string): string {
+  let html = markdown;
+
+  // Code blocks (must be first)
+  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+    return `<pre><code class="language-${lang || 'text'}">${escapeHtml(code.trim())}</code></pre>`;
+  });
+  
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // Headers
+  html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+  // Bold and italic
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+  // Links
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+  // Blockquotes
+  html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+
+  // Unordered lists
+  const ulRegex = /^[-*+] (.+)$/gm;
+  let inList = false;
+  html = html.split('\n').map(line => {
+    const match = line.match(/^[-*+] (.+)$/);
+    if (match) {
+      const item = `<li>${match[1]}</li>`;
+      if (!inList) {
+        inList = true;
+        return `<ul>${item}`;
+      }
+      return item;
+    } else if (inList && line.trim() === '') {
+      inList = false;
+      return '</ul>';
+    }
+    if (inList) {
+      inList = false;
+      return `</ul>${line}`;
+    }
+    return line;
+  }).join('\n');
+  if (inList) html += '</ul>';
+
+  // Horizontal rules
+  html = html.replace(/^---$/gm, '<hr>');
+
+  // Paragraphs
+  html = html.split('\n\n').map(block => {
+    block = block.trim();
+    if (!block) return '';
+    if (block.match(/^<[a-z]/i)) return block;
+    return `<p>${block.replace(/\n/g, '<br>')}</p>`;
+  }).join('\n');
+
+  return html;
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 export function CourseLearnPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -363,14 +460,10 @@ function LessonContent({ lessonId }: { lessonId: string }) {
       )}
 
       {lesson.content && (
-        <div className="prose prose-neutral dark:prose-invert mt-6 max-w-none prose-headings:scroll-mt-20 prose-headings:font-semibold prose-h1:text-2xl prose-h1:mb-4 prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4 prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-3 prose-p:leading-7 prose-p:mb-4 prose-li:my-1 prose-ul:my-4 prose-ol:my-4 prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:overflow-x-auto prose-pre:my-4 prose-code:before:content-none prose-code:after:content-none prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-strong:font-semibold prose-blockquote:border-l-primary prose-blockquote:bg-muted/30 prose-blockquote:py-1 prose-hr:my-8">
-          <ReactMarkdown 
-            remarkPlugins={[remarkGfm]} 
-            rehypePlugins={[[rehypePrism, { ignoreMissing: true }]]}
-          >
-            {lesson.content}
-          </ReactMarkdown>
-        </div>
+        <div 
+          className="prose prose-neutral dark:prose-invert mt-6 max-w-none prose-headings:scroll-mt-20 prose-headings:font-semibold prose-h1:text-2xl prose-h1:mb-4 prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4 prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-3 prose-p:leading-7 prose-p:mb-4 prose-li:my-1 prose-ul:my-4 prose-ol:my-4 prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:overflow-x-auto prose-pre:my-4 prose-code:before:content-none prose-code:after:content-none prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-strong:font-semibold prose-blockquote:border-l-primary prose-blockquote:bg-muted/30 prose-blockquote:py-1 prose-hr:my-8"
+          dangerouslySetInnerHTML={{ __html: processLessonContent(lesson.content) }}
+        />
       )}
     </div>
   );

@@ -26,14 +26,15 @@ const reorderSchema = z.object({
 });
 
 async function checkUserCourseAccess(courseId: string, userId?: string, userAddress?: string): Promise<boolean> {
-  if (!userId) return false;
-
   const course = await db.query.courses.findFirst({
     where: eq(courses.id, courseId),
   });
 
   if (!course) return false;
-  if (course.isFree) return true;
+  if (course.isFree) return true;  // Free courses accessible to everyone
+  
+  if (!userId) return false;  // Non-free courses require login
+  
   if (course.creatorId === userId) return true;
 
   if (course.onChainId && userAddress) {

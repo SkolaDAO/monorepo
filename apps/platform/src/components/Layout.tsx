@@ -1,42 +1,96 @@
-import { useState } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
-import { ThemeToggle, Button, cn } from "@skola/ui";
+import { ThemeToggle, cn } from "@skola/ui";
 import { useAuth } from "../contexts/AuthContext";
 import { useUnreadCount } from "../hooks/useNotifications";
 import { NotificationsDropdown } from "./NotificationsDropdown";
 
+// Sidebar context for global collapse state
+interface SidebarContextType {
+  isCollapsed: boolean;
+  setIsCollapsed: (collapsed: boolean) => void;
+  toggleCollapsed: () => void;
+}
+
+const SidebarContext = createContext<SidebarContextType | null>(null);
+
+export function useSidebar() {
+  const context = useContext(SidebarContext);
+  if (!context) {
+    throw new Error("useSidebar must be used within Layout");
+  }
+  return context;
+}
+
 export function Layout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  
+  // Persist collapsed state in localStorage
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const saved = localStorage.getItem("sidebar-collapsed");
+    return saved === "true";
+  });
+
+  // Auto-collapse on course detail and learn pages
+  useEffect(() => {
+    const shouldAutoCollapse = 
+      location.pathname.match(/^\/course\/[^/]+$/) || // Course detail
+      location.pathname.match(/^\/course\/[^/]+\/learn/); // Course learn
+    
+    if (shouldAutoCollapse) {
+      setIsCollapsed(true);
+    }
+  }, [location.pathname]);
+
+  // Save collapsed state
+  useEffect(() => {
+    localStorage.setItem("sidebar-collapsed", String(isCollapsed));
+  }, [isCollapsed]);
+
+  const toggleCollapsed = () => setIsCollapsed(prev => !prev);
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      
-      <div className="flex flex-1 flex-col lg:pl-64 overflow-hidden">
-        <TopBar onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 overflow-y-auto">
-          <Outlet />
-        </main>
-      </div>
-
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
-          onClick={() => setSidebarOpen(false)}
+    <SidebarContext.Provider value={{ isCollapsed, setIsCollapsed, toggleCollapsed }}>
+      <div className="flex h-screen overflow-hidden">
+        <Sidebar 
+          isMobileOpen={mobileOpen} 
+          onMobileClose={() => setMobileOpen(false)}
+          isCollapsed={isCollapsed}
+          onToggleCollapse={toggleCollapsed}
         />
-      )}
-    </div>
+        
+        <div className={cn(
+          "flex flex-1 flex-col overflow-hidden transition-all duration-300",
+          isCollapsed ? "lg:pl-20" : "lg:pl-64"
+        )}>
+          <TopBar onMenuClick={() => setMobileOpen(true)} />
+          <main className="flex-1 overflow-y-auto">
+            <Outlet />
+          </main>
+        </div>
+
+        {mobileOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
+            onClick={() => setMobileOpen(false)}
+          />
+        )}
+      </div>
+    </SidebarContext.Provider>
   );
 }
 
 interface SidebarProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isMobileOpen: boolean;
+  onMobileClose: () => void;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
-function Sidebar({ isOpen, onClose }: SidebarProps) {
+function Sidebar({ isMobileOpen, onMobileClose, isCollapsed, onToggleCollapse }: SidebarProps) {
   const location = useLocation();
   const { user } = useAuth();
 
@@ -53,18 +107,44 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-background transition-transform duration-300 lg:translate-x-0",
-        isOpen ? "translate-x-0" : "-translate-x-full"
+        "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-border bg-background transition-all duration-300",
+        // Mobile: always full width when open
+        isMobileOpen ? "translate-x-0" : "-translate-x-full",
+        // Desktop: collapsed or expanded
+        "lg:translate-x-0",
+        isCollapsed ? "lg:w-20" : "lg:w-64",
+        // Mobile always full width
+        "w-64"
       )}
     >
-      <div className="flex h-16 items-center gap-3 border-b border-border px-6">
-        <Link to="/" className="flex items-center gap-2" onClick={onClose}>
-          <img src="/logo.png" alt="Skola" className="h-8 w-8" />
-          <span className="text-xl font-bold">Skola</span>
+      {/* Header */}
+      <div className={cn(
+        "flex h-16 items-center border-b border-border transition-all duration-300",
+        isCollapsed ? "lg:justify-center lg:px-2" : "px-6"
+      )}>
+        <Link 
+          to="/" 
+          className={cn(
+            "flex items-center gap-2",
+            isCollapsed && "lg:justify-center"
+          )} 
+          onClick={onMobileClose}
+        >
+          <img src="/logo.png" alt="Skola" className="h-8 w-8 flex-shrink-0" />
+          <span className={cn(
+            "text-xl font-bold transition-opacity duration-300",
+            isCollapsed ? "lg:hidden" : ""
+          )}>
+            Skola
+          </span>
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto p-4">
+      {/* Navigation */}
+      <nav className={cn(
+        "flex-1 space-y-1 overflow-y-auto p-4 transition-all duration-300",
+        isCollapsed && "lg:px-2"
+      )}>
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.href;
@@ -73,23 +153,56 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
             <Link
               key={item.href}
               to={item.href}
-              onClick={onClose}
+              onClick={onMobileClose}
+              title={isCollapsed ? item.label : undefined}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                 isActive
                   ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                isCollapsed && "lg:justify-center lg:px-2"
               )}
             >
-              <Icon className="h-5 w-5" />
-              {item.label}
+              <Icon className="h-5 w-5 flex-shrink-0" />
+              <span className={cn(
+                "transition-opacity duration-300",
+                isCollapsed ? "lg:hidden" : ""
+              )}>
+                {item.label}
+              </span>
             </Link>
           );
         })}
       </nav>
 
-      <div className="border-t border-border p-4 space-y-3">
-        <div className="flex items-center gap-2">
+      {/* Footer */}
+      <div className={cn(
+        "border-t border-border p-4 space-y-3 transition-all duration-300",
+        isCollapsed && "lg:px-2"
+      )}>
+        {/* Collapse toggle button - desktop only */}
+        <button
+          onClick={onToggleCollapse}
+          className="hidden lg:flex w-full items-center justify-center gap-2 rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          <ChevronIcon className={cn(
+            "h-5 w-5 transition-transform duration-300",
+            isCollapsed ? "rotate-180" : ""
+          )} />
+          <span className={cn(
+            "text-sm transition-opacity duration-300",
+            isCollapsed ? "lg:hidden" : ""
+          )}>
+            Collapse
+          </span>
+        </button>
+
+        {/* Social links */}
+        <div className={cn(
+          "flex items-center gap-2",
+          isCollapsed ? "lg:flex-col lg:gap-1" : ""
+        )}>
           <a
             href="https://x.com/skoladao"
             target="_blank"
@@ -118,7 +231,11 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
             <DiscordIcon className="h-4 w-4" />
           </a>
         </div>
-        <p className="text-xs text-muted-foreground">
+        
+        <p className={cn(
+          "text-xs text-muted-foreground transition-opacity duration-300",
+          isCollapsed ? "lg:hidden" : ""
+        )}>
           © {new Date().getFullYear()} Skola
         </p>
       </div>
@@ -132,20 +249,8 @@ interface TopBarProps {
 
 function TopBar({ onMenuClick }: TopBarProps) {
   const { isConnected } = useAccount();
-  const { isAuthenticated, signIn, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isSigningIn } = useAuth();
   const { count: unreadCount } = useUnreadCount();
-  const [isSigningIn, setIsSigningIn] = useState(false);
-
-  const handleSignIn = async () => {
-    setIsSigningIn(true);
-    try {
-      await signIn();
-    } catch (error) {
-      console.error("Sign in failed:", error);
-    } finally {
-      setIsSigningIn(false);
-    }
-  };
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-lg lg:px-6">
@@ -160,19 +265,16 @@ function TopBar({ onMenuClick }: TopBarProps) {
       <div className="hidden lg:block" />
 
       <div className="flex items-center gap-3">
+        {isConnected && isSigningIn && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <span className="hidden sm:inline">Signing in...</span>
+          </div>
+        )}
         {isConnected && isAuthenticated && (
           <NotificationsDropdown unreadCount={unreadCount} />
         )}
         <ThemeToggle />
-        {isConnected && !isAuthenticated && !authLoading && (
-          <Button
-            size="sm"
-            onClick={handleSignIn}
-            disabled={isSigningIn}
-          >
-            {isSigningIn ? "Signing in..." : "Sign In"}
-          </Button>
-        )}
         <ConnectButton />
       </div>
     </header>
@@ -183,6 +285,14 @@ function MenuIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  );
+}
+
+function ChevronIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
     </svg>
   );
 }

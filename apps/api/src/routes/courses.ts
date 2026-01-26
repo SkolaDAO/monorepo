@@ -9,6 +9,7 @@ import { checkCourseAccess } from "../services/blockchain";
 import type { AppVariables } from "../types";
 
 const MAX_FREE_COURSES = 100;
+const FREE_TRIAL_COURSE_LIMIT = 1; // Non-creators can create 1 free course
 
 const coursesRouter = new Hono<{ Variables: AppVariables }>();
 
@@ -180,7 +181,7 @@ coursesRouter.get("/", zValidator("query", querySchema), optionalAuthMiddleware,
   });
 });
 
-coursesRouter.get("/my", authMiddleware, creatorMiddleware, async (c) => {
+coursesRouter.get("/my", authMiddleware, async (c) => {
   const user = c.get("user");
 
   const courseList = await db.query.courses.findMany({
@@ -323,24 +324,47 @@ coursesRouter.get("/:id", optionalAuthMiddleware, async (c) => {
   });
 });
 
-coursesRouter.post("/", authMiddleware, creatorMiddleware, zValidator("json", createCourseSchema), async (c) => {
+// Allow non-creators to create ONE free course (trial), otherwise require creator status
+coursesRouter.post("/", authMiddleware, zValidator("json", createCourseSchema), async (c) => {
   const user = c.get("user");
   const data = c.req.valid("json");
   const isFree = data.isFree ?? false;
 
-  if (isFree) {
-    const existingFreeCourses = await db.query.courses.findMany({
-      where: and(eq(courses.creatorId, user.id), eq(courses.isFree, true)),
-      columns: { id: true },
-    });
+  // Check existing courses for this user
+  const existingCourses = await db.query.courses.findMany({
+    where: eq(courses.creatorId, user.id),
+    columns: { id: true, isFree: true },
+  });
 
-    if (existingFreeCourses.length >= MAX_FREE_COURSES) {
+  const existingFreeCourses = existingCourses.filter((c) => c.isFree);
+  const totalCourses = existingCourses.length;
+
+  // Non-creators can only create free courses, and only up to FREE_TRIAL_COURSE_LIMIT
+  if (!user.isCreator) {
+    if (!isFree) {
       return c.json({
-        error: `You have reached the maximum of ${MAX_FREE_COURSES} free courses`,
-        currentCount: existingFreeCourses.length,
-        maxCount: MAX_FREE_COURSES,
+        error: "Become a creator to create paid courses",
+        code: "CREATOR_REQUIRED_FOR_PAID",
       }, 403);
     }
+
+    if (totalCourses >= FREE_TRIAL_COURSE_LIMIT) {
+      return c.json({
+        error: "Become a creator to create more courses",
+        code: "FREE_TRIAL_LIMIT_REACHED",
+        currentCount: totalCourses,
+        maxTrialCourses: FREE_TRIAL_COURSE_LIMIT,
+      }, 403);
+    }
+  }
+
+  // Creators have a higher limit for free courses
+  if (user.isCreator && isFree && existingFreeCourses.length >= MAX_FREE_COURSES) {
+    return c.json({
+      error: `You have reached the maximum of ${MAX_FREE_COURSES} free courses`,
+      currentCount: existingFreeCourses.length,
+      maxCount: MAX_FREE_COURSES,
+    }, 403);
   }
 
   const [course] = await db
@@ -508,7 +532,43 @@ coursesRouter.post("/:id/unpublish", authMiddleware, creatorMiddleware, async (c
   return c.json(updated);
 });
 
-coursesRouter.get("/free-course-limits", authMiddleware, creatorMiddleware, async (c) => {
+// Check what courses a user can create (works for creators and non-creators)
+coursesRouter.get("/creation-eligibility", authMiddleware, async (c) => {
+  const user = c.get("user");
+
+  const existingCourses = await db.query.courses.findMany({
+    where: eq(courses.creatorId, user.id),
+    columns: { id: true, isFree: true },
+  });
+
+  const existingFreeCourses = existingCourses.filter((c) => c.isFree);
+  const totalCourses = existingCourses.length;
+
+  if (user.isCreator) {
+    return c.json({
+      isCreator: true,
+      canCreateFree: existingFreeCourses.length < MAX_FREE_COURSES,
+      canCreatePaid: true,
+      freeCoursesCount: existingFreeCourses.length,
+      maxFreeCourses: MAX_FREE_COURSES,
+      totalCourses,
+    });
+  }
+
+  // Non-creator
+  const canCreateTrial = totalCourses < FREE_TRIAL_COURSE_LIMIT;
+
+  return c.json({
+    isCreator: false,
+    canCreateFree: canCreateTrial,
+    canCreatePaid: false,
+    trialCoursesUsed: totalCourses,
+    maxTrialCourses: FREE_TRIAL_COURSE_LIMIT,
+    totalCourses,
+  });
+});
+
+coursesRouter.get("/free-course-limits", authMiddleware, async (c) => {
   const user = c.get("user");
 
   const existingFreeCourses = await db.query.courses.findMany({

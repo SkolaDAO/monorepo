@@ -137,10 +137,12 @@ export function useCreateCourse() {
     priceUsd: string;
     previewPercentage?: number;
     onChainId?: number;
+    isFree?: boolean;
   }) => {
     setIsLoading(true);
     try {
-      const course = await api.post<Course>("/courses", data);
+      const isFree = data.priceUsd === "0" || data.isFree;
+      const course = await api.post<Course>("/courses", { ...data, isFree });
       return course;
     } finally {
       setIsLoading(false);

@@ -84,24 +84,22 @@ function ConnectedDashboard({ address }: { address: `0x${string}` }) {
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold">
                   Welcome back{" "}
-                  <span className="text-gradient">Creator</span>
+                  <span className="text-gradient">{isRegistered ? "Creator" : ""}</span>
                 </h1>
                 <p className="text-muted-foreground mt-1">
                   {address.slice(0, 6)}...{address.slice(-4)}
                 </p>
               </div>
-              {isRegistered && (
-                <motion.div variants={fadeInUp}>
-                  <Button 
-                    onClick={() => navigate("/create")} 
-                    size="lg"
-                    className="shadow-lg shadow-primary/20"
-                  >
-                    <PlusIcon className="w-5 h-5 mr-2" />
-                    Create Course
-                  </Button>
-                </motion.div>
-              )}
+              <motion.div variants={fadeInUp}>
+                <Button 
+                  onClick={() => navigate("/create")} 
+                  size="lg"
+                  className="shadow-lg shadow-primary/20"
+                >
+                  <PlusIcon className="w-5 h-5 mr-2" />
+                  Create Course
+                </Button>
+              </motion.div>
             </motion.div>
           </motion.div>
         </Container>
@@ -163,18 +161,14 @@ function ConnectedDashboard({ address }: { address: `0x${string}` }) {
                 <CardContent className="p-6">
                   {!isAuthenticated ? (
                     <NotSignedInState onSignIn={signIn} />
-                  ) : isRegistered ? (
-                    coursesLoading ? (
-                      <div className="flex items-center justify-center py-12">
-                        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                      </div>
-                    ) : courses.length > 0 ? (
-                      <CreatorCoursesList courses={courses} />
-                    ) : (
-                      <EmptyCoursesState onCreate={() => navigate("/create")} />
-                    )
+                  ) : coursesLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    </div>
+                  ) : courses.length > 0 ? (
+                    <CreatorCoursesList courses={courses} />
                   ) : (
-                    <NotRegisteredState onRegister={() => setIsStakingModalOpen(true)} />
+                    <EmptyCoursesState onCreate={() => navigate("/create")} isRegistered={isRegistered} />
                   )}
                 </CardContent>
               </Card>
@@ -190,21 +184,21 @@ function ConnectedDashboard({ address }: { address: `0x${string}` }) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 space-y-3">
-                  {isRegistered && (
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start gap-3 h-12"
-                      onClick={() => navigate("/create")}
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <PlusIcon className="w-4 h-4 text-primary" />
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-3 h-12"
+                    onClick={() => navigate("/create")}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <PlusIcon className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-medium">Create Course</div>
+                      <div className="text-xs text-muted-foreground">
+                        {isRegistered ? "Start a new course" : "Try your first free course"}
                       </div>
-                      <div className="text-left">
-                        <div className="font-medium">Create Course</div>
-                        <div className="text-xs text-muted-foreground">Start a new course</div>
-                      </div>
-                    </Button>
-                  )}
+                    </div>
+                  </Button>
                   <Button
                     variant="outline"
                     className="w-full justify-start gap-3 h-12"
@@ -367,24 +361,7 @@ function NotSignedInState({ onSignIn }: { onSignIn: () => Promise<void> }) {
   );
 }
 
-function NotRegisteredState({ onRegister }: { onRegister: () => void }) {
-  return (
-    <div className="py-12 text-center">
-      <div className="mb-4 inline-flex p-4 rounded-full bg-primary/10">
-        <SparklesIcon className="h-8 w-8 text-primary" />
-      </div>
-      <h3 className="font-semibold text-lg mb-2">Become a Creator</h3>
-      <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-        Register as a creator for a one-time $20 payment. Publish unlimited courses and keep 92% of every sale.
-      </p>
-      <Button onClick={onRegister} size="lg" className="shadow-lg shadow-primary/20">
-        Register Now — $20
-      </Button>
-    </div>
-  );
-}
-
-function EmptyCoursesState({ onCreate }: { onCreate: () => void }) {
+function EmptyCoursesState({ onCreate, isRegistered }: { onCreate: () => void; isRegistered: boolean }) {
   return (
     <div className="py-12 text-center">
       <div className="mb-4 inline-flex p-4 rounded-full bg-muted">
@@ -392,11 +369,13 @@ function EmptyCoursesState({ onCreate }: { onCreate: () => void }) {
       </div>
       <h3 className="font-semibold mb-2">No courses yet</h3>
       <p className="text-sm text-muted-foreground mb-4">
-        Create your first course and start earning!
+        {isRegistered 
+          ? "Create your first course and start earning!" 
+          : "Try creating your first free course!"}
       </p>
       <Button onClick={onCreate}>
         <PlusIcon className="w-4 h-4 mr-2" />
-        Create Course
+        {isRegistered ? "Create Course" : "Create Free Course"}
       </Button>
     </div>
   );

@@ -4,12 +4,15 @@ import {
   EditorContent,
   type JSONContent,
 } from "novel";
+import { defaultExtensions } from "novel/extensions";
 
 interface NovelEditorProps {
   initialContent?: string;
   onChange: (html: string) => void;
   className?: string;
 }
+
+const extensions = [...defaultExtensions];
 
 export function NovelEditor({ initialContent, onChange, className }: NovelEditorProps) {
   const initialJSON = useMemo(() => {
@@ -31,6 +34,7 @@ export function NovelEditor({ initialContent, onChange, className }: NovelEditor
         <EditorContent
           immediatelyRender={false}
           initialContent={initialJSON}
+          extensions={extensions}
           className="relative min-h-[300px] w-full border border-border rounded-lg bg-background overflow-hidden"
           editorProps={{
             attributes: {

@@ -3,10 +3,15 @@ pragma solidity ^0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract CreatorStaking is Ownable, ReentrancyGuard {
+/// @title CreatorStaking
+/// @notice Stake ETH or USDC to unlock creator tiers and course limits
+/// @dev UUPS Upgradeable
+contract CreatorStaking is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     enum Tier {
@@ -29,19 +34,19 @@ contract CreatorStaking is Ownable, ReentrancyGuard {
         uint8 activeCourses;
     }
 
-    IERC20 public immutable usdc;
+    IERC20 public usdc;
 
-    uint256 public starterStakeUsd = 10e6;
-    uint256 public proStakeUsd = 50e6;
-    uint256 public eliteStakeUsd = 200e6;
+    uint256 public starterStakeUsd;
+    uint256 public proStakeUsd;
+    uint256 public eliteStakeUsd;
 
-    uint256 public ethPriceUsd = 3000e6;
+    uint256 public ethPriceUsd;
 
-    uint8 public starterMaxCourses = 1;
-    uint8 public proMaxCourses = 5;
-    uint8 public eliteMaxCourses = 255;
+    uint8 public starterMaxCourses;
+    uint8 public proMaxCourses;
+    uint8 public eliteMaxCourses;
 
-    uint256 public unstakeCooldown = 7 days;
+    uint256 public unstakeCooldown;
 
     mapping(address => CreatorInfo) public creators;
 
@@ -54,6 +59,7 @@ contract CreatorStaking is Ownable, ReentrancyGuard {
     event TierUpdated(address indexed creator, Tier oldTier, Tier newTier);
     event CourseMarketplaceSet(address indexed marketplace);
     event EthPriceUpdated(uint256 newPrice);
+    event StakeTokenUpdated(address indexed token);
 
     error InsufficientStake();
     error AlreadyStaked();
@@ -65,9 +71,30 @@ contract CreatorStaking is Ownable, ReentrancyGuard {
     error InvalidAmount();
     error TransferFailed();
 
-    constructor(address _usdc, address _owner) Ownable(_owner) {
-        usdc = IERC20(_usdc);
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
     }
+
+    function initialize(address _usdc, address _owner) external initializer {
+        __Ownable_init(_owner);
+
+        usdc = IERC20(_usdc);
+        
+        starterStakeUsd = 10e6;
+        proStakeUsd = 50e6;
+        eliteStakeUsd = 200e6;
+        
+        ethPriceUsd = 3000e6;
+        
+        starterMaxCourses = 1;
+        proMaxCourses = 5;
+        eliteMaxCourses = 255;
+        
+        unstakeCooldown = 7 days;
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function stakeETH(Tier targetTier) external payable nonReentrant {
         if (creators[msg.sender].stakedAmount > 0) revert AlreadyStaked();
@@ -239,6 +266,13 @@ contract CreatorStaking is Ownable, ReentrancyGuard {
         if (tier == Tier.Pro) return proStakeUsd;
         if (tier == Tier.Starter) return starterStakeUsd;
         return 0;
+    }
+
+    // ============ Admin Functions ============
+
+    function setStakeToken(address _token) external onlyOwner {
+        usdc = IERC20(_token);
+        emit StakeTokenUpdated(_token);
     }
 
     function setCourseMarketplace(address _marketplace) external onlyOwner {

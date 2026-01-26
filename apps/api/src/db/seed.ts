@@ -13,7 +13,7 @@ async function seed() {
     .values({
       address: SKOLA_ADDRESS,
       username: "Skola",
-      avatar: "https://api.dicebear.com/7.x/shapes/svg?seed=skola",
+      avatar: "https://app.skola.academy/logo.png",
       bio: "Official Skola Academy courses. Learn web3 development, blockchain fundamentals, and decentralized technologies.",
       isCreator: true,
       isAdmin: true,

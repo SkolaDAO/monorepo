@@ -245,7 +245,7 @@ function CourseDetail({
                     <Button 
                       className="w-full" 
                       size="lg"
-                      onClick={() => navigate(`/course/${id}/learn`)}
+                      onClick={() => navigate(`/course/${apiCourse.id}/learn`)}
                     >
                       Start Learning
                     </Button>

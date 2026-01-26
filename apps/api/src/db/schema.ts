@@ -42,6 +42,7 @@ export const users = pgTable(
       discord?: string;
     }>(),
     isCreator: boolean("is_creator").notNull().default(false),
+    isVerified: boolean("is_verified").notNull().default(false),
     isAdmin: boolean("is_admin").notNull().default(false),
     isBanned: boolean("is_banned").notNull().default(false),
     bannedAt: timestamp("banned_at"),

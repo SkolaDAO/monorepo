@@ -6,6 +6,7 @@ import { useStartDM } from "../hooks/useChat";
 import { useAuth } from "../contexts/AuthContext";
 import { ReportModal } from "../components/ReportModal";
 import { useCourseRating } from "../hooks/useCourseRating";
+import { VerifiedBadge } from "../components/VerifiedBadge";
 
 export function CourseDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -113,8 +114,9 @@ export function CourseDetailPage() {
                         )}
                       </div>
                       <div>
-                        <p className="font-medium">
+                        <p className="font-medium flex items-center gap-1.5">
                           {course.creator?.username || truncateAddress(course.creator?.address)}
+                          {course.creator?.isVerified && <VerifiedBadge size="sm" />}
                         </p>
                         <p className="text-sm text-muted-foreground">Course Creator</p>
                       </div>
@@ -407,6 +409,7 @@ interface CreatorCardProps {
     username: string | null;
     avatar: string | null;
     bio?: string | null;
+    isVerified?: boolean;
   };
 }
 
@@ -449,8 +452,9 @@ function CreatorCard({ creator }: CreatorCardProps) {
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate font-medium">
+            <p className="truncate font-medium flex items-center gap-1.5">
               {creator.username || truncateAddress(creator.address)}
+              {creator.isVerified && <VerifiedBadge size="sm" />}
             </p>
             {creator.bio && (
               <p className="line-clamp-2 text-sm text-muted-foreground">{creator.bio}</p>

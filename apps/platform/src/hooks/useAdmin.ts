@@ -16,6 +16,7 @@ export interface AdminUser {
   username: string | null;
   avatar: string | null;
   isCreator: boolean;
+  isVerified: boolean;
   isAdmin: boolean;
   isBanned: boolean;
   bannedAt: string | null;
@@ -99,6 +100,7 @@ export interface AdminCreator {
   username: string | null;
   avatar: string | null;
   isCreator: boolean;
+  isVerified: boolean;
   creatorTier: string | null;
   creatorRegisteredAt: string | null;
   createdAt: string;
@@ -526,6 +528,30 @@ export function useAdminActions() {
     }
   };
 
+  const verifyCreator = async (userId: string) => {
+    setIsLoading(true);
+    try {
+      await api.post(`/admin/creators/${userId}/verify`);
+      return true;
+    } catch (err) {
+      throw err instanceof Error ? err : new Error("Failed to verify creator");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const unverifyCreator = async (userId: string) => {
+    setIsLoading(true);
+    try {
+      await api.post(`/admin/creators/${userId}/unverify`);
+      return true;
+    } catch (err) {
+      throw err instanceof Error ? err : new Error("Failed to unverify creator");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     banUser,
     unbanUser,
@@ -536,6 +562,8 @@ export function useAdminActions() {
     deleteMessage,
     whitelistCreator,
     removeCreator,
+    verifyCreator,
+    unverifyCreator,
     isLoading,
   };
 }

@@ -156,6 +156,7 @@ export interface User {
   avatar: string | null;
   bio: string | null;
   isCreator: boolean;
+  isVerified: boolean;
   isAdmin: boolean;
   creatorTier: "starter" | "pro" | "elite" | null;
   referralCode: string | null;
@@ -201,6 +202,7 @@ export interface Course {
     username: string | null;
     avatar: string | null;
     bio?: string | null;
+    isVerified?: boolean;
   };
   chapters?: Chapter[];
 }

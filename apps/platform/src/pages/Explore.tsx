@@ -4,6 +4,7 @@ import { motion, useInView } from "framer-motion";
 import { Button, Card, CardContent, CardHeader, CardTitle, Container, Badge, cn } from "@skola/ui";
 import { useCourses } from "../hooks/useApiCourses";
 import { useCategories } from "../hooks/useCategories";
+import { VerifiedBadge } from "../components/VerifiedBadge";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -393,6 +394,7 @@ interface CourseCardProps {
       username: string | null;
       avatar: string | null;
       address: string;
+      isVerified?: boolean;
     };
     categories?: {
       id: string;
@@ -482,8 +484,9 @@ function CourseCard({ course }: CourseCardProps) {
                 {(course.creator?.username || course.creator?.address || "?")[0].toUpperCase()}
               </div>
             )}
-            <span className="truncate font-medium">
+            <span className="truncate font-medium flex items-center gap-1">
               {course.creator?.username || truncateAddress(course.creator?.address || "")}
+              {course.creator?.isVerified && <VerifiedBadge size="xs" />}
             </span>
           </div>
         </CardContent>

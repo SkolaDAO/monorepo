@@ -279,6 +279,7 @@ adminRouter.get("/users", zValidator("query", usersQuerySchema), async (c) => {
         username: true,
         avatar: true,
         isCreator: true,
+        isVerified: true,
         isAdmin: true,
         isBanned: true,
         bannedAt: true,
@@ -437,6 +438,67 @@ adminRouter.post("/creators/whitelist", zValidator("json", whitelistCreatorSchem
   });
 });
 
+// ============ Creator Verification ============
+
+adminRouter.post("/creators/:id/verify", async (c) => {
+  const userId = c.req.param("id");
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+  });
+
+  if (!user) {
+    return c.json({ error: "User not found" }, 404);
+  }
+
+  if (user.isVerified) {
+    return c.json({ error: "User is already verified" }, 400);
+  }
+
+  await db
+    .update(users)
+    .set({
+      isVerified: true,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
+
+  await db.insert(notifications).values({
+    userId,
+    type: "system",
+    title: "Account Verified! ✓",
+    body: "Congratulations! Your account has been verified. You now have a blue checkmark next to your name.",
+  });
+
+  return c.json({ success: true, message: "Creator verified successfully" });
+});
+
+adminRouter.post("/creators/:id/unverify", async (c) => {
+  const userId = c.req.param("id");
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+  });
+
+  if (!user) {
+    return c.json({ error: "User not found" }, 404);
+  }
+
+  if (!user.isVerified) {
+    return c.json({ error: "User is not verified" }, 400);
+  }
+
+  await db
+    .update(users)
+    .set({
+      isVerified: false,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
+
+  return c.json({ success: true, message: "Verification removed" });
+});
+
 adminRouter.post("/creators/:id/remove", async (c) => {
   const userId = c.req.param("id");
 
@@ -497,6 +559,7 @@ adminRouter.get("/creators", zValidator("query", creatorsQuerySchema), async (c)
         username: true,
         avatar: true,
         isCreator: true,
+        isVerified: true,
         creatorTier: true,
         creatorRegisteredAt: true,
         createdAt: true,

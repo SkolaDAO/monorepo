@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { Container, Button, Card, CardContent, Badge, cn } from "@skola/ui";
 import { useAuth } from "../contexts/AuthContext";
+import { VerifiedBadge } from "../components/VerifiedBadge";
 import {
   useAdminStats,
   useAdminUsers,
@@ -648,7 +649,7 @@ function CreatorsTab() {
   const [page, setPage] = useState(1);
   const [whitelistAddress, setWhitelistAddress] = useState("");
   const { data, isLoading, refetch } = useAdminCreators({ page, search: search || undefined });
-  const { whitelistCreator, removeCreator, isLoading: actionLoading } = useAdminActions();
+  const { whitelistCreator, removeCreator, verifyCreator, unverifyCreator, isLoading: actionLoading } = useAdminActions();
   const [showWhitelistModal, setShowWhitelistModal] = useState(false);
   const [removeModal, setRemoveModal] = useState<AdminCreator | null>(null);
 
@@ -715,8 +716,9 @@ function CreatorsTab() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-medium">
+                          <span className="font-medium flex items-center gap-1.5">
                             {creator.username || truncateAddress(creator.address)}
+                            {creator.isVerified && <VerifiedBadge size="sm" />}
                           </span>
                           {creator.creatorTier && (
                             <Badge variant="secondary">{creator.creatorTier}</Badge>
@@ -731,13 +733,32 @@ function CreatorsTab() {
                       </div>
                     </div>
 
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => setRemoveModal(creator)}
-                    >
-                      Remove
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant={creator.isVerified ? "outline" : "default"}
+                        size="sm"
+                        onClick={async () => {
+                          try {
+                            if (creator.isVerified) {
+                              await unverifyCreator(creator.id);
+                            } else {
+                              await verifyCreator(creator.id);
+                            }
+                            refetch();
+                          } catch {}
+                        }}
+                        disabled={actionLoading}
+                      >
+                        {creator.isVerified ? "Unverify" : "✓ Verify"}
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setRemoveModal(creator)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

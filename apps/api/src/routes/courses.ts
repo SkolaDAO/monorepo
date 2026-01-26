@@ -88,6 +88,7 @@ coursesRouter.get("/", zValidator("query", querySchema), optionalAuthMiddleware,
             address: true,
             username: true,
             avatar: true,
+            isVerified: true,
           },
         },
         chapters: {
@@ -228,6 +229,7 @@ coursesRouter.get("/purchased", authMiddleware, async (c) => {
               address: true,
               username: true,
               avatar: true,
+              isVerified: true,
             },
           },
           chapters: {
@@ -267,6 +269,7 @@ coursesRouter.get("/:id", optionalAuthMiddleware, async (c) => {
           username: true,
           avatar: true,
           bio: true,
+          isVerified: true,
         },
       },
       chapters: {

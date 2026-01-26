@@ -196,6 +196,10 @@ export interface Course {
   previewPercentage: number;
   lessonCount: number;
   hasAccess?: boolean;
+  rating?: {
+    average: number;
+    count: number;
+  } | null;
   creator?: {
     id: string;
     address: string;

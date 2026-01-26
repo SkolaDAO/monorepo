@@ -24,6 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isSigningIn, setIsSigningIn] = useState(false);
   const hasAutoSignedIn = useRef(false);
   const previousAddress = useRef<string | undefined>(undefined);
+  const hasTriedRestore = useRef(false);
 
   const refreshUser = useCallback(async () => {
     if (!api.isAuthenticated()) {
@@ -46,7 +47,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       if (api.isAuthenticated() && isConnected) {
         await refreshUser();
+        hasTriedRestore.current = true;
+      } else if (isConnected) {
+        // Connected but no tokens - mark restore as done
+        hasTriedRestore.current = true;
+        setUser(null);
       } else {
+        // Not connected yet - don't mark restore as done, wait for connection
         setUser(null);
       }
       setIsLoading(false);
@@ -60,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       api.clearTokens();
       setUser(null);
       hasAutoSignedIn.current = false;
+      hasTriedRestore.current = false;
     }
   }, [isConnected, user]);
 
@@ -72,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 3. Not currently signing in
       // 4. Not still loading
       // 5. Haven't already tried auto sign-in for this address
+      // 6. Have already tried to restore existing session (prevents race condition on reload)
       if (
         isConnected &&
         address &&
@@ -80,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         !isSigningIn &&
         !isLoading &&
         !api.isAuthenticated() &&
+        hasTriedRestore.current &&
         (previousAddress.current !== address || !hasAutoSignedIn.current)
       ) {
         previousAddress.current = address;

@@ -1,5 +1,14 @@
 # Fee Structure
 
+## Creator Fees
+
+| Plan | Cost | Courses |
+|------|------|---------|
+| **Free** | $0 | 1 course |
+| **Unlimited** | $20 one-time | Unlimited |
+
+Your first course is free. Upgrade for $20 to publish unlimited courses forever.
+
 ## Course Sale Breakdown
 
 For a $100 course sale:
@@ -16,45 +25,58 @@ For a $100 course sale:
 └─────────────────────────────────────────┘
 ```
 
+**If no referrer:** Creator gets 95%, platform gets 5%.
+
 ## Payment Methods
 
 Learners can pay with:
 
 | Method | How It Works |
 |--------|--------------|
-| **USDC** | Pay exact USD amount |
 | **ETH** | Converted at current rate |
+| **USDC** | Pay exact USD amount |
 
-Both settle instantly on Base. Low gas fees (~$0.01).
+Both settle instantly on Base. Gas fees are tiny (~$0.01).
 
 ## Referral System
 
 Share courses and earn 3% on every sale you refer.
 
-- Get your unique referral link
+- Get your unique referral link from the dashboard
 - Share it with your audience
 - Earn 3% when someone buys through your link
+- Track your earnings in real-time
 
 The 3% comes from the protocol's share, not the creator's.
 
-## Comparison
+## Platform Comparison
 
-| Platform | Creator Gets | Platform Takes |
-|----------|--------------|----------------|
-| Udemy | 37% | 63% |
-| Skillshare | Variable | Majority |
-| Teachable | 90-95% | 5-10% + fees |
-| **Skola** | **92%** | **5%** + 3% referrer |
+| Platform | Creator Gets | Platform Fees |
+|----------|--------------|---------------|
+| Udemy | 37% | None |
+| Skillshare | Variable | None |
+| Teachable | 90-95% | $39-119/month |
+| Kajabi | 100% | $149-399/month |
+| **Skola** | **92%** | **$20 once** |
 
-No hidden fees. No payment processing markups. What you see is what you get.
+No hidden fees. No payment processing markups. No monthly bills.
 
 ## Protocol Fee Usage
 
 The 5% protocol fee supports:
 
-- Platform development
-- Infrastructure costs
+- Platform development and maintenance
+- Infrastructure costs (video hosting, servers)
 - Community initiatives
-- Future governance treasury
+- Future development
 
-We're building sustainably without VC funding.
+We're building sustainably, funded by usage not VC money.
+
+## Gas Fees
+
+Transactions happen on Base (Ethereum L2):
+- **Typical gas cost**: ~$0.01
+- **Paid by**: Buyer (for purchases), Creator (for registration)
+- **Speed**: ~2 seconds to confirm
+
+Base offers Ethereum security with 100x lower fees.

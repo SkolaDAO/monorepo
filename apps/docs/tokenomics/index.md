@@ -1,89 +1,63 @@
-# Roadmap
+# Roadmap & Future
 
-## Current State: Phase 1
+## Current Status ✅
 
-Skola is live with core functionality:
+Skola is **live on Base** with these features:
 
-| Feature | Status |
-|---------|--------|
-| Creator registration (ETH/USDC) | Live |
-| One-time payment, no subscription | Live |
-| Course publishing | Live |
-| Payments (ETH/USDC) | Live |
-| Referral system (3%) | Live |
-| Base network | Live |
+- ✅ Course creation (first course free)
+- ✅ Video hosting with protection
+- ✅ ETH and USDC payments
+- ✅ 92% creator revenue share
+- ✅ Instant payouts
+- ✅ Course chat and DMs
+- ✅ Real-time notifications
+- ✅ Referral program (3%)
+- ✅ Free courses option
+- ✅ Moderation system
 
-## Early Supporter Airdrop
+## Coming Soon 🚧
 
-::: tip Pay Now, Get Tokens Later
-All creators who register with ETH or USDC before our token launch will receive $LEARN tokens.
+### Q1 2026
+- Mobile-optimized experience
+- Course ratings and reviews
+- Creator verification badges
+- Advanced analytics dashboard
 
-| Tier | Airdrop Allocation |
-|------|-------------------|
-| Starter ($10) | Base allocation |
-| Pro ($50) | 5x allocation |
-| Elite ($200) | 20x allocation |
+### Q2 2026
+- Mobile apps (iOS, Android)
+- Course bundles
+- Subscription model option
+- Multi-language support
 
-**This is tracked automatically on-chain. No signup or claim needed.**
-:::
+### Q3 2026
+- Creator token rewards
+- Governance system
+- DAO treasury
+- Community grants
 
-## Phase 2: Growth
+## Token Plans
 
-Coming next:
+We plan to launch a governance token that will:
+- Reward early creators and learners
+- Enable platform governance
+- Distribute protocol fees to stakers
 
-- **Course content hosting** - IPFS for metadata, optimized video delivery
-- **Creator analytics** - Sales, views, engagement metrics
-- **Reviews & ratings** - Community feedback system
-- **Categories & search** - Better course discovery
-- **Community chat** - Buyers can discuss courses together
-- **Creator DMs** - Direct communication with course creators
+**No token exists yet.** We're focused on building a useful product first.
 
-## Phase 3: Token Launch
+Early users of the platform (creators and buyers) will be considered for future airdrops based on their activity.
 
-Once we have real traction and liquidity makes sense:
+## Philosophy
 
-### Why Wait?
+We're building Skola differently:
 
-Launching a token without usage is putting the cart before the horse. We're building real value first, then adding a token that captures that value.
+1. **Product first** — Token comes after product-market fit
+2. **Sustainable** — Revenue from fees, not speculation
+3. **Fair launch** — No VC allocation, community-first
+4. **Transparent** — Open source, on-chain, verifiable
 
-### Planned Token Utility
+## Get Involved
 
-| Use Case | Benefit |
-|----------|---------|
-| Creator registration | Alternative to ETH/USDC payment |
-| Payment discount | 5% off for learners |
-| Protocol staking | Earn share of fees |
-| Governance | Vote on protocol parameters |
-
-### No VC, No Presale
-
-We're bootstrapping:
-- No private investors
-- No presale dumping
-- Community-first distribution
-- Early ETH/USDC payers get airdrop
-
-See [Token Utility](/tokenomics/utility) and [Distribution](/tokenomics/distribution) for the planned design.
-
-## Phase 4: Decentralization
-
-Long-term goals:
-
-- **Full DAO governance** - Community controls treasury and upgrades
-- **Multi-chain** - Expand beyond Base
-- **Protocol-owned liquidity** - Sustainable token liquidity
-- **Advanced features** - Subscriptions, bundles, cohort-based courses
-
-## Why This Order?
-
-```
-Build Product → Get Users → Prove Value → Launch Token → Reward Early Users
-```
-
-Not:
-
-```
-Launch Token → Hope for Users → ???
-```
-
-We're doing it the hard way because it's the right way.
+- **Create courses** — [app.skola.academy](https://app.skola.academy)
+- **Join Discord** — [discord.gg/5qec9N8xmY](https://discord.gg/5qec9N8xmY)
+- **Follow updates** — [@skoladao](https://x.com/skoladao)
+- **Contribute** — [github.com/SkolaDAO](https://github.com/SkolaDAO)

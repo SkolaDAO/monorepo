@@ -1,83 +1,96 @@
 # For Learners
 
-## Why Skola?
+## Why Learn on Skola?
 
-### 1. Quality Signal
-Every creator has skin in the game. They paid to be here.
+| Feature | Benefit |
+|---------|---------|
+| **Free courses** | Quality content at no cost |
+| **Course previews** | Try before you buy |
+| **Fair pricing** | Creators set prices, no platform markup |
+| **Community chat** | Learn with others |
+| **Creator access** | DM course creators directly |
+| **On-chain ownership** | Permanent proof of purchase |
 
-### 2. Support Creators Directly
-92% of your payment goes to the creator, not a corporation.
+## Getting Started
 
-### 3. Global Access
-No credit card? No problem. Crypto works everywhere.
+### 1. Browse Courses
+Explore courses at [app.skola.academy](https://app.skola.academy). Filter by category or search by topic.
 
-### 4. Instant Access
-Pay and start learning immediately. No processing delays.
+### 2. Preview Content
+Every course has preview lessons you can access for free. Try before you commit.
 
-### 5. Community Included
-Every course includes community chat - learn with others.
+### 3. Connect & Purchase
+To buy a course:
+1. Connect your Web3 wallet
+2. Pay with ETH or USDC on Base
+3. Get instant access
 
-## How to Buy
+### 4. Learn & Engage
+- Watch video lessons
+- Read markdown content
+- Chat with community
+- Message the creator
 
-### 1. Connect Wallet
-Any Web3 wallet works (MetaMask, Rainbow, Coinbase Wallet, etc.)
+## Free Courses
 
-### 2. Browse & Preview
-- Find courses you're interested in
-- Watch preview lessons (first 5% is free)
-- Check out the creator's profile
+We have free courses available right now:
+- Blockchain Fundamentals
+- EVM Smart Contract Development
+- Web3 Marketing & Growth
+- DeFi Protocol Development
+- Decentralized Social Networks
 
-### 3. Pay
-Choose your payment method:
-- **USDC** - Stablecoin, exact USD price
-- **ETH** - Converted at current rate
-
-### 4. Learn & Connect
-- Watch protected video content
-- Read markdown lessons
-- Chat with the community
-- Message the creator directly
+No wallet needed to browse. Connect to track progress.
 
 ## Payment Options
 
-| Method | Notes |
-|--------|-------|
-| **USDC** | Pay exact USD amount, no price fluctuation |
-| **ETH** | Converted at current market rate |
+| Method | Network | Notes |
+|--------|---------|-------|
+| **ETH** | Base | Converted at current rate |
+| **USDC** | Base | Pay exact USD price |
 
-Both are on Base network (low fees, ~$0.01 per transaction).
+### Don't Have Crypto?
 
-## What You Get
+To get ETH or USDC on Base:
+1. Buy on Coinbase, Binance, or any exchange
+2. Bridge to Base using the [Base Bridge](https://bridge.base.org)
+3. Or buy directly with card via [Moonpay](https://www.moonpay.com)
 
-### Instant Access
-- **No processing delays** - Access immediately after purchase
-- **On-chain proof** - Your purchase is recorded permanently
-- **Lifetime access** - No subscriptions, pay once
+## Features
 
-### Protected Content
-- **Video streaming** - High-quality, protected videos
-- **Can't be shared** - Links expire, domain-locked
-- **Markdown lessons** - Clean, readable content
+### Video Streaming
+- Protected playback (no downloading)
+- Works on any device
+- Fast global CDN
 
-### Community Features
-- **Course chat** - Discuss with other learners
-- **Creator DMs** - Message the course creator directly
-- **Notifications** - Know when creators respond
+### Course Chat
+- Each course has a community chat
+- Connect with other learners
+- Ask questions, share insights
 
-### Referral Rewards
-Have friends who want to learn? Share your referral link and earn 3% on their purchases.
+### Creator DMs
+- Message course creators directly
+- Get personalized help
+- Build relationships
 
-## Getting Started with Base
+### Progress Tracking
+- See which lessons you've completed
+- Pick up where you left off
+- Track across all your courses
 
-New to Base? Here's how to get set up:
+## Refunds
 
-1. **Get a wallet** - [MetaMask](https://metamask.io) or [Rainbow](https://rainbow.me)
-2. **Add Base network** - [chainlist.org](https://chainlist.org/?search=base)
-3. **Bridge funds** - Use the [Base Bridge](https://bridge.base.org) or buy directly on exchanges
-4. **Ready to go** - Connect wallet and start learning
+Purchases are on-chain and final. That's why we encourage:
+- Using free previews before buying
+- Reading course descriptions carefully
+- Checking lesson counts and content
 
-## Need Help?
+Creators may offer refunds at their discretion by sending funds directly.
 
-- Check course preview before buying
-- Message creators with questions
-- Join course communities to learn with others
+## Support
+
+- **Course issues**: Message the creator directly
+- **Platform issues**: Join our [Discord](https://discord.gg/5qec9N8xmY)
+- **Bug reports**: Open an issue on [GitHub](https://github.com/SkolaDAO)
+
+[Start learning →](https://app.skola.academy)

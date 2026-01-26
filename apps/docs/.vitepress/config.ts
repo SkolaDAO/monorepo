@@ -14,7 +14,8 @@ export default defineConfig({
     nav: [
       { text: 'Home', link: '/' },
       { text: 'Platform', link: '/platform/' },
-      { text: 'Roadmap', link: '/tokenomics/' }
+      { text: 'Roadmap', link: '/tokenomics/' },
+      { text: 'Launch App', link: 'https://app.skola.academy' }
     ],
 
     sidebar: {
@@ -25,19 +26,15 @@ export default defineConfig({
             { text: 'Overview', link: '/platform/' },
             { text: 'For Creators', link: '/platform/creators' },
             { text: 'For Learners', link: '/platform/learners' },
-            { text: 'Creator Registration', link: '/platform/staking' },
             { text: 'Fees', link: '/platform/fees' }
           ]
         }
       ],
       '/tokenomics/': [
         {
-          text: 'Roadmap & Token',
+          text: 'Roadmap',
           items: [
-            { text: 'Roadmap', link: '/tokenomics/' },
-            { text: 'Token Utility (Planned)', link: '/tokenomics/utility' },
-            { text: 'Distribution (Planned)', link: '/tokenomics/distribution' },
-            { text: 'Value Accrual (Planned)', link: '/tokenomics/value-accrual' }
+            { text: 'Roadmap & Future', link: '/tokenomics/' }
           ]
         }
       ]
@@ -51,7 +48,7 @@ export default defineConfig({
 
     footer: {
       message: 'Built for creators, by creators.',
-      copyright: '© 2025 Skola'
+      copyright: '© 2026 Skola'
     }
   }
 })

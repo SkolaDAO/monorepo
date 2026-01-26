@@ -6,12 +6,12 @@ Skola is a decentralized marketplace where educators sell courses directly to le
 
 Traditional platforms exploit creators:
 
-| Platform | Creator Revenue |
-|----------|-----------------|
-| Udemy | 37% |
-| Skillshare | ~$0.05-0.10/min watched |
-| Traditional | **You lose the majority** |
-| **Skola** | **92%** |
+| Platform | Creator Revenue | Monthly Fees |
+|----------|-----------------|--------------|
+| Udemy | 37% | None |
+| Teachable | 90% | $39-119/mo |
+| Kajabi | 100% | $149-399/mo |
+| **Skola** | **92%** | **$0-20 once** |
 
 ## How It Works
 
@@ -20,64 +20,79 @@ Traditional platforms exploit creators:
 │                                                             │
 │   CREATOR                                         LEARNER   │
 │   ┌──────────┐                                 ┌─────────┐  │
-│   │ Pay Once │                                 │  Browse │  │
-│   │ ETH/USDC │                                 │ Courses │  │
+│   │  First   │                                 │  Browse │  │
+│   │  FREE    │                                 │ Courses │  │
 │   └────┬─────┘                                 └────┬────┘  │
 │        │                                            │       │
 │        ▼                                            ▼       │
 │   ┌──────────┐                                 ┌─────────┐  │
 │   │ Publish  │                                 │   Buy   │  │
-│   │ Course   │◄────────── Purchase ───────────►│ Course  │  │
-│   └────┬─────┘                                 └────┬────┘  │
-│        │                                            │       │
-│        ▼                                            ▼       │
-│   ┌──────────┐                                 ┌─────────┐  │
+│   │ Course   │◄────────── Purchase ───────────►│  (ETH/  │  │
+│   └────┬─────┘                                 │  USDC)  │  │
+│        │                                       └────┬────┘  │
+│        ▼                                            │       │
+│   ┌──────────┐                                 ┌────▼────┐  │
 │   │ Receive  │                                 │  Learn  │  │
 │   │   92%    │                                 │ + Chat  │  │
-│   └──────────┘                                 └─────────┘  │
+│   │ INSTANT  │                                 └─────────┘  │
+│   └──────────┘                                              │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Core Principles
-
-### 1. Skin in the Game
-Creators pay once ($10-$200) to publish forever. This filters spam and signals commitment to learners.
-
-### 2. Fair Revenue
-92% to creator, 5% protocol fee, 3% optional referrer.
-
-### 3. Crypto-Native
-Pay with ETH or USDC on Base. Global access, instant payments, low fees.
-
-### 4. True Ownership
-Your content, your audience. Export anytime. No lock-in.
-
-## Platform Features
+## Pricing
 
 ### For Creators
-- **Video hosting** - Upload videos with protected streaming (Bunny Stream)
-- **Course builder** - Markdown lessons with video support
-- **Community chat** - Built-in chat for each course
-- **Direct messages** - Connect with learners directly
-- **Real-time notifications** - Know when you make a sale instantly
-- **Referral system** - Earn 3% when you refer others
+
+| Plan | Cost | Courses |
+|------|------|---------|
+| **Free** | $0 | 1 course |
+| **Unlimited** | $20 one-time | Unlimited |
+
+Your first course is completely free. Pay $20 once (in ETH or USDC) to unlock unlimited courses forever.
+
+### Revenue Split
+
+| Recipient | Share |
+|-----------|-------|
+| Creator | 92% |
+| Platform | 5% |
+| Referrer | 3% (if applicable) |
+
+If no referrer, creator gets 95%.
+
+## Core Features
+
+### For Creators
+- **Video hosting** — Protected streaming, no downloads
+- **Course builder** — Markdown lessons with video support
+- **Community chat** — Built-in chat room for each course
+- **Direct messages** — Connect with learners directly
+- **Real-time notifications** — Know when you make a sale
+- **Referral system** — Earn 3% when you refer purchases
+- **Free courses** — Option to make courses free for learners
 
 ### For Learners
-- **Course preview** - Try 5% of content before buying
-- **Video streaming** - Protected videos that can't be shared
-- **Community access** - Chat with other learners in each course
-- **Creator DMs** - Message course creators directly
-- **On-chain proof** - Your purchase is recorded permanently
+- **Course preview** — Try content before buying
+- **Protected videos** — Stream securely, can't be shared
+- **Community access** — Chat with other learners
+- **Creator DMs** — Message course creators directly
+- **On-chain proof** — Your purchase is recorded permanently
+
+## Tech Stack
+
+- **Blockchain**: Base (Ethereum L2)
+- **Payments**: ETH and USDC
+- **Video**: Protected streaming with signed URLs
+- **Chat**: Real-time messaging
+- **Smart Contracts**: Upgradeable, auditable
 
 ## Current Status
 
-Skola is live on **Base** (Ethereum L2):
+✅ Live on Base mainnet  
+✅ Free courses available to learn from  
+✅ First course free for all creators  
+✅ Instant payments working  
+✅ Video hosting, chat, notifications all included
 
-- **Pay once with ETH or USDC** to become a creator
-- **Purchase courses with ETH or USDC**
-- **Instant settlements** - creators get paid immediately
-- **Protected video content** - no more link sharing
-- **Built-in chat and notifications**
-
-See our [Roadmap](/tokenomics/) for what's coming next.
+[Launch the app →](https://app.skola.academy)

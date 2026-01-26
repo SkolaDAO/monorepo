@@ -1,8 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypePrism from "rehype-prism-plus";
 import Prism from "prismjs";
 import "prismjs/components/prism-solidity";
 import "prismjs/components/prism-typescript";
@@ -82,7 +79,6 @@ function markdownToHtml(markdown: string): string {
   html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
 
   // Unordered lists
-  const ulRegex = /^[-*+] (.+)$/gm;
   let inList = false;
   html = html.split('\n').map(line => {
     const match = line.match(/^[-*+] (.+)$/);

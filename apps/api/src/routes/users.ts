@@ -9,12 +9,50 @@ import type { AppVariables } from "../types";
 
 const usersRouter = new Hono<{ Variables: AppVariables }>();
 
+const socialsSchema = z.object({
+  twitter: z.string().max(100).optional().nullable(),
+  github: z.string().max(100).optional().nullable(),
+  website: z.string().url().max(200).optional().nullable(),
+  linkedin: z.string().max(100).optional().nullable(),
+  youtube: z.string().max(100).optional().nullable(),
+  discord: z.string().max(100).optional().nullable(),
+}).optional();
+
 const updateProfileSchema = z.object({
-  username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_]+$/).optional(),
-  avatar: z.string().url().optional(),
-  bio: z.string().max(500).optional(),
+  username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores").optional().nullable(),
+  avatar: z.string().url().optional().nullable(),
+  bio: z.string().max(500).optional().nullable(),
+  socials: socialsSchema,
 });
 
+// Get current user profile
+usersRouter.get("/me", authMiddleware, async (c) => {
+  const authUser = c.get("user");
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, authUser.id),
+    columns: {
+      id: true,
+      address: true,
+      username: true,
+      avatar: true,
+      bio: true,
+      socials: true,
+      isCreator: true,
+      creatorTier: true,
+      referralCode: true,
+      createdAt: true,
+    },
+  });
+
+  if (!user) {
+    return c.json({ error: "User not found" }, 404);
+  }
+
+  return c.json(user);
+});
+
+// Get user by ID
 usersRouter.get("/:id", async (c) => {
   const id = c.req.param("id");
 
@@ -26,6 +64,7 @@ usersRouter.get("/:id", async (c) => {
       username: true,
       avatar: true,
       bio: true,
+      socials: true,
       isCreator: true,
       creatorTier: true,
       createdAt: true,
@@ -39,6 +78,7 @@ usersRouter.get("/:id", async (c) => {
   return c.json(user);
 });
 
+// Get user by address
 usersRouter.get("/address/:address", async (c) => {
   const address = c.req.param("address").toLowerCase();
 
@@ -50,6 +90,7 @@ usersRouter.get("/address/:address", async (c) => {
       username: true,
       avatar: true,
       bio: true,
+      socials: true,
       isCreator: true,
       creatorTier: true,
       createdAt: true,
@@ -63,10 +104,12 @@ usersRouter.get("/address/:address", async (c) => {
   return c.json(user);
 });
 
+// Update current user profile
 usersRouter.patch("/me", authMiddleware, zValidator("json", updateProfileSchema), async (c) => {
   const authUser = c.get("user");
   const data = c.req.valid("json");
 
+  // Check username uniqueness
   if (data.username) {
     const existing = await db.query.users.findFirst({
       where: eq(users.username, data.username),
@@ -77,12 +120,25 @@ usersRouter.patch("/me", authMiddleware, zValidator("json", updateProfileSchema)
     }
   }
 
+  // Clean up socials - remove empty strings and convert to null
+  const cleanSocials = data.socials
+    ? Object.fromEntries(
+        Object.entries(data.socials).map(([k, v]) => [k, v?.trim() || null])
+      )
+    : undefined;
+
+  const updateData: Record<string, unknown> = {
+    updatedAt: new Date(),
+  };
+
+  if (data.username !== undefined) updateData.username = data.username || null;
+  if (data.avatar !== undefined) updateData.avatar = data.avatar || null;
+  if (data.bio !== undefined) updateData.bio = data.bio || null;
+  if (cleanSocials !== undefined) updateData.socials = cleanSocials;
+
   const [updated] = await db
     .update(users)
-    .set({
-      ...data,
-      updatedAt: new Date(),
-    })
+    .set(updateData)
     .where(eq(users.id, authUser.id))
     .returning();
 
@@ -92,11 +148,13 @@ usersRouter.patch("/me", authMiddleware, zValidator("json", updateProfileSchema)
     username: updated.username,
     avatar: updated.avatar,
     bio: updated.bio,
+    socials: updated.socials,
     isCreator: updated.isCreator,
     creatorTier: updated.creatorTier,
   });
 });
 
+// Sync creator status from blockchain
 usersRouter.post("/sync-creator", authMiddleware, async (c) => {
   const authUser = c.get("user");
 

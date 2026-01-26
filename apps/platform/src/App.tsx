@@ -15,6 +15,7 @@ import { LeaderboardPage } from "./pages/LeaderboardPage";
 import { CategoriesPage } from "./pages/CategoriesPage";
 import { CategoryPage } from "./pages/CategoryPage";
 import { AdminPage } from "./pages/AdminPage";
+import { SettingsPage } from "./pages/SettingsPage";
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
         <Route path="/categories" element={<CategoriesPage />} />
         <Route path="/category/:slug" element={<CategoryPage />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
       </Route>
     </Routes>
     </>

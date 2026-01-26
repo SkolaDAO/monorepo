@@ -33,6 +33,14 @@ export const users = pgTable(
     username: text("username"),
     avatar: text("avatar"),
     bio: text("bio"),
+    socials: jsonb("socials").$type<{
+      twitter?: string;
+      github?: string;
+      website?: string;
+      linkedin?: string;
+      youtube?: string;
+      discord?: string;
+    }>(),
     isCreator: boolean("is_creator").notNull().default(false),
     isAdmin: boolean("is_admin").notNull().default(false),
     isBanned: boolean("is_banned").notNull().default(false),

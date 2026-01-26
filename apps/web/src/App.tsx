@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, useInView, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Button, Badge, Container, ThemeToggle, cn } from "@skola/ui";
-import { FaXTwitter, FaDiscord, FaGithub } from "react-icons/fa6";
+import { FaXTwitter, FaDiscord, FaGithub, FaYoutube, FaTelegram } from "react-icons/fa6";
+import { SiFarcaster } from "react-icons/si";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://api.skola.academy";
 
@@ -1168,7 +1169,10 @@ function Footer() {
     ],
     Community: [
       { label: "Discord", href: "https://discord.gg/5qec9N8xmY" },
-      { label: "Twitter", href: "https://x.com/skoladao" },
+      { label: "Twitter / X", href: "https://x.com/skoladao" },
+      { label: "Farcaster", href: "https://warpcast.com/skola" },
+      { label: "Telegram", href: "https://t.me/skoladao" },
+      { label: "YouTube", href: "https://youtube.com/@skoladao" },
       { label: "GitHub", href: "https://github.com/SkolaDAO" },
     ],
   };
@@ -1186,7 +1190,7 @@ function Footer() {
             <p className="text-muted-foreground mb-6 max-w-sm">
               The decentralized course marketplace. Create, teach, and earn on your terms.
             </p>
-            <div className="flex gap-4">
+            <div className="flex gap-3 flex-wrap">
               <a
                 href="https://x.com/skoladao"
                 target="_blank"
@@ -1197,6 +1201,15 @@ function Footer() {
                 <FaXTwitter className="w-5 h-5" />
               </a>
               <a
+                href="https://warpcast.com/skola"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+                aria-label="Farcaster"
+              >
+                <SiFarcaster className="w-5 h-5" />
+              </a>
+              <a
                 href="https://discord.gg/5qec9N8xmY"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -1204,6 +1217,24 @@ function Footer() {
                 aria-label="Discord"
               >
                 <FaDiscord className="w-5 h-5" />
+              </a>
+              <a
+                href="https://t.me/skoladao"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+                aria-label="Telegram"
+              >
+                <FaTelegram className="w-5 h-5" />
+              </a>
+              <a
+                href="https://youtube.com/@skoladao"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+                aria-label="YouTube"
+              >
+                <FaYoutube className="w-5 h-5" />
               </a>
               <a
                 href="https://github.com/SkolaDAO"

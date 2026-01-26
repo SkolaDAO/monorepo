@@ -228,7 +228,7 @@ function CourseDetail({
                 <span>
                   By {apiCourse.creator?.username || `${onChainCourse.creator.slice(0, 6)}...${onChainCourse.creator.slice(-4)}`}
                 </span>
-                <span>{Number(onChainCourse.totalSales)} students</span>
+                <span>{Math.max(Number(onChainCourse.totalSales), (apiCourse as any).studentCount || 0)} students</span>
               </div>
 
               <Card>

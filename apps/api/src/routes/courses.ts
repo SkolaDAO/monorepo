@@ -319,12 +319,21 @@ coursesRouter.get("/:id", optionalAuthMiddleware, async (c) => {
 
   const lessonCount = course.chapters.reduce((sum, ch) => sum + ch.lessons.length, 0);
 
+  // Get student count from purchases
+  const [studentCountResult] = await db
+    .select({ count: sql<number>`count(distinct ${purchases.userId})` })
+    .from(purchases)
+    .where(eq(purchases.courseId, course.id));
+  
+  const studentCount = Number(studentCountResult?.count ?? 0);
+
   return c.json({
     ...course,
     categories: course.courseCategories.map((cc) => cc.category),
     courseCategories: undefined,
     hasAccess,
     lessonCount,
+    studentCount,
   });
 });
 

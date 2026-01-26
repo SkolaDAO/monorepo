@@ -20,7 +20,7 @@ const envSchema = z.object({
 
   // App
   PORT: z.coerce.number().default(3001),
-  CORS_ORIGIN: z.string().default("http://localhost:5174"),
+  CORS_ORIGIN: z.string().default("http://localhost:5174,https://app.skola.academy,https://skola.academy,https://platform-production-fb6d.up.railway.app"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 });
 

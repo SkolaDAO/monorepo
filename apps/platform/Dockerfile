@@ -16,16 +16,8 @@ RUN pnpm install --frozen-lockfile --filter platform...
 COPY apps/platform ./apps/platform
 COPY packages/ui ./packages/ui
 
-# Build args for env vars
-ARG VITE_API_URL
-ARG VITE_WALLET_CONNECT_PROJECT_ID
-ARG VITE_CLOUDINARY_CLOUD_NAME
-ARG VITE_CLOUDINARY_UPLOAD_PRESET
-
-ENV VITE_API_URL=$VITE_API_URL
-ENV VITE_WALLET_CONNECT_PROJECT_ID=$VITE_WALLET_CONNECT_PROJECT_ID
-ENV VITE_CLOUDINARY_CLOUD_NAME=$VITE_CLOUDINARY_CLOUD_NAME
-ENV VITE_CLOUDINARY_UPLOAD_PRESET=$VITE_CLOUDINARY_UPLOAD_PRESET
+# Build with hardcoded production API URL
+ENV VITE_API_URL=https://api.skola.academy
 
 # Build
 RUN pnpm --filter platform build

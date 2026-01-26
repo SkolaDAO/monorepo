@@ -3,8 +3,12 @@ import {
   EditorRoot,
   EditorContent,
   type JSONContent,
+  StarterKit,
+  TiptapLink,
+  TiptapImage,
+  TiptapUnderline,
+  Placeholder,
 } from "novel";
-import { defaultExtensions } from "novel/extensions";
 
 interface NovelEditorProps {
   initialContent?: string;
@@ -12,7 +16,17 @@ interface NovelEditorProps {
   className?: string;
 }
 
-const extensions = [...defaultExtensions];
+const extensions = [
+  StarterKit,
+  TiptapLink.configure({
+    HTMLAttributes: { class: "text-primary underline" },
+  }),
+  TiptapImage,
+  TiptapUnderline,
+  Placeholder.configure({
+    placeholder: "Start writing your lesson content...",
+  }),
+];
 
 export function NovelEditor({ initialContent, onChange, className }: NovelEditorProps) {
   const initialJSON = useMemo(() => {

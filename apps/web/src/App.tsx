@@ -103,7 +103,7 @@ function Header() {
                 { href: "#features", label: "Features" },
                 { href: "#how-it-works", label: "How It Works" },
                 { href: "#pricing", label: "Pricing" },
-                { href: "https://github.com/SkolaDAO/monorepo#readme", label: "Docs", external: true },
+                { href: "https://docs.skola.academy", label: "Docs", external: true },
               ].map((link) => (
                 <motion.a
                   key={link.href}
@@ -169,7 +169,7 @@ function Header() {
                 {["Features", "How It Works", "Pricing", "Docs"].map((item) => (
                   <a
                     key={item}
-                    href={item === "Docs" ? "https://github.com/SkolaDAO/monorepo#readme" : `#${item.toLowerCase().replace(/ /g, "-")}`}
+                    href={item === "Docs" ? "https://docs.skola.academy" : `#${item.toLowerCase().replace(/ /g, "-")}`}
                     className="text-2xl font-medium"
                     onClick={() => setMobileMenuOpen(false)}
                   >
@@ -1158,7 +1158,7 @@ function CTA() {
                   Create Your First Course
                 </Button>
               </a>
-              <a href="https://github.com/SkolaDAO/monorepo#readme">
+              <a href="https://docs.skola.academy">
                 <Button
                   size="lg"
                   variant="outline"
@@ -1185,7 +1185,7 @@ function Footer() {
       { label: "Browse Courses", href: "https://app.skola.academy" },
     ],
     Resources: [
-      { label: "Documentation", href: "https://github.com/SkolaDAO/monorepo/tree/main/apps/docs" },
+      { label: "Documentation", href: "https://docs.skola.academy" },
       { label: "GitHub", href: "https://github.com/SkolaDAO/monorepo" },
     ],
     Community: [

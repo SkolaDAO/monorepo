@@ -560,8 +560,9 @@ function FeaturedCourses() {
                       <span className="truncate flex items-center gap-1">
                         {course.creator?.username || truncateAddress(course.creator?.address || "")}
                         {course.creator?.isVerified && (
-                          <svg className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M8.52 3.59a3.5 3.5 0 0 1 6.96 0c1.2.16 2.33.8 3.1 1.83a3.5 3.5 0 0 1 4.92 4.92 3.5 3.5 0 0 1 0 6.96 3.5 3.5 0 0 1-4.92 4.92 3.5 3.5 0 0 1-6.96 0 3.5 3.5 0 0 1-4.92-4.92 3.5 3.5 0 0 1 0-6.96A3.5 3.5 0 0 1 8.52 3.6Zm6.78 6.2a.75.75 0 1 0-1.1-1.02l-3.78 4.07-1.64-1.64a.75.75 0 0 0-1.06 1.06l2.2 2.2a.75.75 0 0 0 1.08-.02l4.3-4.65Z" />
+                          <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 22 22" fill="none">
+                            <circle cx="11" cy="11" r="11" fill="#1D9BF0"/>
+                            <path d="M9.5 14.25L6.25 11L7.3125 9.9375L9.5 12.125L14.6875 6.9375L15.75 8L9.5 14.25Z" fill="white"/>
                           </svg>
                         )}
                       </span>

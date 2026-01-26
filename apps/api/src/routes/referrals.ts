@@ -104,6 +104,7 @@ referralsRouter.get("/code/:code", async (c) => {
       id: true,
       username: true,
       avatar: true,
+      address: true,
     },
   });
 

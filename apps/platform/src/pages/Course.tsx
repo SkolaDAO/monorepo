@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { Button, Card, CardContent, CardHeader, CardTitle, Container, Badge } from "@skola/ui";
 import { useCourse as useApiCourse } from "../hooks/useApiCourses";
@@ -113,7 +113,25 @@ function CourseDetail({
   );
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("ETH");
-  const [referrer] = useState<`0x${string}`>("0x0000000000000000000000000000000000000000");
+  const [searchParams] = useSearchParams();
+  const [referrer, setReferrer] = useState<`0x${string}`>("0x0000000000000000000000000000000000000000");
+  const [referrerName, setReferrerName] = useState<string | null>(null);
+  
+  // Lookup referrer from URL param
+  useEffect(() => {
+    const refCode = searchParams.get("ref");
+    if (refCode) {
+      fetch(`${import.meta.env.VITE_API_URL || ""}/referrals/code/${refCode}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.valid && data.referrer?.address) {
+            setReferrer(data.referrer.address as `0x${string}`);
+            setReferrerName(data.referrer.username || data.referrer.address.slice(0, 8));
+          }
+        })
+        .catch(() => {});
+    }
+  }, [searchParams]);
 
   const needsApproval = paymentMethod === "USDC" && allowance < onChainCourse.priceUsd;
 
@@ -307,19 +325,29 @@ function CourseDetail({
                   </>
                 )}
 
+                {referrerName && (
+                  <div className="rounded-lg bg-primary/10 p-3 text-sm">
+                    <span className="text-muted-foreground">Referred by </span>
+                    <span className="font-medium">{referrerName}</span>
+                    <span className="text-muted-foreground"> (gets 3%)</span>
+                  </div>
+                )}
+
                 <div className="border-t border-border pt-4 space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Creator receives</span>
-                    <span className="text-emerald-500 font-medium">92-95%</span>
+                    <span className="text-emerald-500 font-medium">{referrerName ? "92%" : "95%"}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Platform fee</span>
                     <span>5%</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Referrer fee</span>
-                    <span>3% (if applicable)</span>
-                  </div>
+                  {referrerName && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Referrer fee</span>
+                      <span>3%</span>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

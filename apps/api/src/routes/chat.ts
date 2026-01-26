@@ -64,6 +64,7 @@ chatRouter.get("/rooms", authMiddleware, async (c) => {
     orderBy: desc(chatRooms.lastMessageAt),
   });
 
+  // Get courses the user has purchased
   const purchasedCourses = await db.query.purchases.findMany({
     where: eq(purchases.userId, user.id),
     with: {
@@ -71,24 +72,39 @@ chatRouter.get("/rooms", authMiddleware, async (c) => {
     },
   });
 
-  const courseIds = purchasedCourses.map((p) => p.courseId);
+  const purchasedCourseIds = purchasedCourses.map((p) => p.courseId);
+
+  // Get courses the user has created
+  const createdCourses = await db.query.courses.findMany({
+    where: eq(courses.creatorId, user.id),
+    columns: {
+      id: true,
+    },
+  });
+
+  const createdCourseIds = createdCourses.map((c) => c.id);
+
+  // Combine purchased and created course IDs
+  const accessibleCourseIds = [...new Set([...purchasedCourseIds, ...createdCourseIds])];
 
   const communityRoomsList = await db.query.chatRooms.findMany({
-    where: and(
-      eq(chatRooms.type, "community"),
-    ),
+    where: eq(chatRooms.type, "community"),
     with: {
       course: {
         columns: {
           id: true,
           title: true,
           thumbnail: true,
+          creatorId: true,
         },
       },
     },
   });
 
-  const communityRooms = communityRoomsList.filter((r) => r.course && courseIds.includes(r.course.id));
+  // Filter to rooms where user has access (purchased OR created)
+  const communityRooms = communityRoomsList.filter(
+    (r) => r.course && accessibleCourseIds.includes(r.course.id)
+  );
 
   const dmRooms = rooms.filter((r) => r.type === "dm").map((room) => {
     const otherUser = room.participantOne === user.id ? room.participantTwoUser : room.participantOneUser;

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Container, Button, Card, CardContent, CardHeader, CardTitle, Badge, cn } from "@skola/ui";
 import { useCourse } from "../hooks/useApiCourses";
-import { useStartDM } from "../hooks/useChat";
+import { useStartDM, useCourseCommunityRoom } from "../hooks/useChat";
 import { useAuth } from "../contexts/AuthContext";
 import { ReportModal } from "../components/ReportModal";
 import { useCourseRating } from "../hooks/useCourseRating";
@@ -318,6 +318,7 @@ export function CourseDetailPage() {
               <div className="hidden lg:block">
                 <div className="sticky top-8 space-y-6">
                   <PurchaseCard course={course} />
+                  <CommunityCard courseId={course.id} hasAccess={course.hasAccess || course.isFree} />
                   <CreatorCard creator={course.creator} />
                 </div>
               </div>
@@ -531,11 +532,49 @@ function CreatorSocialLinks({ socials }: { socials?: SocialsType | null }) {
   );
 }
 
+interface CommunityCardProps {
+  courseId: string;
+  hasAccess: boolean;
+}
+
+function CommunityCard({ courseId, hasAccess }: CommunityCardProps) {
+  const navigate = useNavigate();
+  const { roomId, isLoading } = useCourseCommunityRoom(hasAccess ? courseId : null);
+
+  if (!hasAccess || isLoading || !roomId) return null;
+
+  return (
+    <Card className="border-border/50">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Course Community</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          Connect with other students and the creator in the community chat.
+        </p>
+        <Button
+          className="w-full"
+          variant="outline"
+          onClick={() => navigate(`/chat?room=${roomId}`)}
+        >
+          <UsersIcon className="mr-2 h-4 w-4" />
+          Join Community Chat
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 interface MobilePurchaseBarProps {
   course: NonNullable<ReturnType<typeof useCourse>["course"]>;
 }
 
 function MobilePurchaseBar({ course }: MobilePurchaseBarProps) {
+  const navigate = useNavigate();
+  const { roomId: communityRoomId } = useCourseCommunityRoom(
+    course.hasAccess || course.isFree ? course.id : null
+  );
+
   return (
     <div className="flex items-center gap-4">
       <div className="flex-1">
@@ -545,6 +584,17 @@ function MobilePurchaseBar({ course }: MobilePurchaseBarProps) {
           <span className="text-lg font-bold">${course.priceUsd}</span>
         )}
       </div>
+      
+      {(course.hasAccess || course.isFree) && communityRoomId && (
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => navigate(`/chat?room=${communityRoomId}`)}
+          title="Community Chat"
+        >
+          <UsersIcon className="h-4 w-4" />
+        </Button>
+      )}
       
       {course.hasAccess ? (
         <Link to={`/course/${course.id}/learn`} className="flex-1">
@@ -560,6 +610,14 @@ function MobilePurchaseBar({ course }: MobilePurchaseBarProps) {
         </Link>
       )}
     </div>
+  );
+}
+
+function UsersIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+    </svg>
   );
 }
 

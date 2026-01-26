@@ -564,9 +564,15 @@ function FeaturedCourses() {
                       <span className="truncate flex items-center gap-1">
                         {course.creator?.username || truncateAddress(course.creator?.address || "")}
                         {course.creator?.isVerified && (
-                          <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 22 22" fill="none">
-                            <circle cx="11" cy="11" r="11" fill="#1D9BF0"/>
-                            <path d="M9.5 14.25L6.25 11L7.3125 9.9375L9.5 12.125L14.6875 6.9375L15.75 8L9.5 14.25Z" fill="white"/>
+                          <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="11" fill="url(#goldGradient)"/>
+                            <path d="M7.5 12.5L10.5 15.5L16.5 9" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            <defs>
+                              <linearGradient id="goldGradient" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                                <stop stopColor="#F7B928"/>
+                                <stop offset="1" stopColor="#D4941C"/>
+                              </linearGradient>
+                            </defs>
                           </svg>
                         )}
                       </span>

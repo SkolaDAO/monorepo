@@ -409,6 +409,17 @@ interface CreatorCardProps {
     username: string | null;
     avatar: string | null;
     bio?: string | null;
+    socials?: {
+      twitter?: string | null;
+      farcaster?: string | null;
+      youtube?: string | null;
+      github?: string | null;
+      discord?: string | null;
+      telegram?: string | null;
+      instagram?: string | null;
+      linkedin?: string | null;
+      website?: string | null;
+    } | null;
     isVerified?: boolean;
   };
 }
@@ -462,6 +473,9 @@ function CreatorCard({ creator }: CreatorCardProps) {
           </div>
         </div>
 
+        {/* Social Links */}
+        <CreatorSocialLinks socials={creator.socials} />
+
         <div className="text-xs text-muted-foreground">
           {isAuthenticated ? "Ask questions before buying" : "Sign in to message creator"}
         </div>
@@ -477,6 +491,43 @@ function CreatorCard({ creator }: CreatorCardProps) {
         </Button>
       </CardContent>
     </Card>
+  );
+}
+
+type SocialsType = NonNullable<NonNullable<CreatorCardProps["creator"]>["socials"]>;
+
+function CreatorSocialLinks({ socials }: { socials?: SocialsType | null }) {
+  if (!socials) return null;
+
+  const links = [
+    { key: "twitter", url: socials.twitter ? `https://x.com/${socials.twitter}` : null, icon: "𝕏", label: "Twitter" },
+    { key: "farcaster", url: socials.farcaster ? `https://warpcast.com/${socials.farcaster}` : null, icon: "⬡", label: "Farcaster" },
+    { key: "youtube", url: socials.youtube ? (socials.youtube.startsWith("http") ? socials.youtube : `https://youtube.com/${socials.youtube}`) : null, icon: "▶", label: "YouTube" },
+    { key: "github", url: socials.github ? `https://github.com/${socials.github}` : null, icon: "◐", label: "GitHub" },
+    { key: "discord", url: socials.discord ? (socials.discord.startsWith("http") ? socials.discord : `https://discord.com/users/${socials.discord}`) : null, icon: "◆", label: "Discord" },
+    { key: "telegram", url: socials.telegram ? `https://t.me/${socials.telegram}` : null, icon: "✈", label: "Telegram" },
+    { key: "instagram", url: socials.instagram ? `https://instagram.com/${socials.instagram}` : null, icon: "◷", label: "Instagram" },
+    { key: "linkedin", url: socials.linkedin ? `https://linkedin.com/in/${socials.linkedin}` : null, icon: "in", label: "LinkedIn" },
+    { key: "website", url: socials.website, icon: "🌐", label: "Website" },
+  ].filter((l) => l.url);
+
+  if (links.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {links.map((link) => (
+        <a
+          key={link.key}
+          href={link.url!}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors text-xs"
+          title={link.label}
+        >
+          {link.icon}
+        </a>
+      ))}
+    </div>
   );
 }
 

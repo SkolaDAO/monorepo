@@ -35,11 +35,14 @@ export const users = pgTable(
     bio: text("bio"),
     socials: jsonb("socials").$type<{
       twitter?: string;
-      github?: string;
-      website?: string;
-      linkedin?: string;
+      farcaster?: string;
       youtube?: string;
+      github?: string;
       discord?: string;
+      telegram?: string;
+      instagram?: string;
+      linkedin?: string;
+      website?: string;
     }>(),
     isCreator: boolean("is_creator").notNull().default(false),
     isVerified: boolean("is_verified").notNull().default(false),

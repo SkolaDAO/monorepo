@@ -11,11 +11,14 @@ const usersRouter = new Hono<{ Variables: AppVariables }>();
 
 const socialsSchema = z.object({
   twitter: z.string().max(100).optional().nullable(),
+  farcaster: z.string().max(100).optional().nullable(),
+  youtube: z.string().max(200).optional().nullable(),
   github: z.string().max(100).optional().nullable(),
-  website: z.string().url().max(200).optional().nullable(),
-  linkedin: z.string().max(100).optional().nullable(),
-  youtube: z.string().max(100).optional().nullable(),
   discord: z.string().max(100).optional().nullable(),
+  telegram: z.string().max(100).optional().nullable(),
+  instagram: z.string().max(100).optional().nullable(),
+  linkedin: z.string().max(100).optional().nullable(),
+  website: z.string().url().max(200).optional().nullable(),
 }).optional();
 
 const updateProfileSchema = z.object({

@@ -269,6 +269,7 @@ coursesRouter.get("/:id", optionalAuthMiddleware, async (c) => {
           username: true,
           avatar: true,
           bio: true,
+          socials: true,
           isVerified: true,
         },
       },

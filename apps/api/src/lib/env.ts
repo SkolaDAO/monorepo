@@ -16,7 +16,7 @@ const envSchema = z.object({
 
   // Blockchain
   RPC_URL: z.string().url(),
-  CHAIN_ID: z.coerce.number().default(84532),
+  CHAIN_ID: z.coerce.number().default(8453),
 
   // App
   PORT: z.coerce.number().default(3001),

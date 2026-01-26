@@ -1,4 +1,4 @@
-import { base, baseSepolia } from "wagmi/chains";
+import { base } from "wagmi/chains";
 
 type ContractAddresses = {
   creatorRegistry: `0x${string}`;
@@ -7,18 +7,13 @@ type ContractAddresses = {
 };
 
 export const CONTRACT_ADDRESSES: Record<number, ContractAddresses> = {
-  [baseSepolia.id]: {
-    creatorRegistry: "0xBe8A57E1cA02959c3af70ebc6a3eECb9cb94b279",
-    courseMarketplace: "0x586a62aB930F79FD90dC242d6edA38f07535e844",
-    usdc: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-  },
   [base.id]: {
-    creatorRegistry: "0x0000000000000000000000000000000000000000",
-    courseMarketplace: "0x0000000000000000000000000000000000000000",
+    creatorRegistry: "0xdC930f9CCc43487F1188d6EDA71BF7684259Bdc3",
+    courseMarketplace: "0x6b7ad46fBbe7Afac9d5FBdB822DE3cb26a953149",
     usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
   },
 };
 
 export function getContractAddresses(chainId: number): ContractAddresses {
-  return CONTRACT_ADDRESSES[chainId] || CONTRACT_ADDRESSES[baseSepolia.id];
+  return CONTRACT_ADDRESSES[chainId] || CONTRACT_ADDRESSES[base.id];
 }

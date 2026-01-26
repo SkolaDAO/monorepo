@@ -73,8 +73,8 @@ const CONTRACT_ADDRESSES: Record<number, { marketplace: Address; registry: Addre
     registry: "0xBe8A57E1cA02959c3af70ebc6a3eECb9cb94b279" as Address,
   },
   8453: {
-    marketplace: "0x0000000000000000000000000000000000000000" as Address,
-    registry: "0x0000000000000000000000000000000000000000" as Address,
+    marketplace: "0x6b7ad46fBbe7Afac9d5FBdB822DE3cb26a953149" as Address,
+    registry: "0xdC930f9CCc43487F1188d6EDA71BF7684259Bdc3" as Address,
   },
 };
 

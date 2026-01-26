@@ -1,9 +1,9 @@
+# Default config - each service should override with its own settings
+# See apps/*/Dockerfile for individual service configs
+
 [build]
 builder = "dockerfile"
-dockerfilePath = "Dockerfile"
 
 [deploy]
-healthcheckPath = "/"
-healthcheckTimeout = 100
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3

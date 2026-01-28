@@ -32,3 +32,13 @@ coverage
 
 # Misc
 *.tsbuildinfo
+
+# Capacitor native build artifacts
+apps/platform/ios/App/Pods
+apps/platform/ios/App/App/public
+apps/platform/ios/App/DerivedData
+apps/platform/android/app/src/main/assets/public
+apps/platform/android/.gradle
+apps/platform/android/app/build
+apps/platform/android/build
+apps/platform/android/local.properties

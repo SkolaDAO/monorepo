@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skola - Product Hunt Media Assets</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            color: #f1f5f9;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            margin-bottom: 40px;
+        }
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+        }
+        .card {
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        .card img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .card-content {
+            padding: 20px;
+        }
+        .card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: #e2e8f0;
+        }
+        .card p {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-bottom: 15px;
+        }
+        .download-btn {
+            display: inline-block;
+            background: linear-gradient(90deg, #3b82f6, #2563eb);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+        .download-btn:hover { opacity: 0.9; }
+        .dimensions {
+            display: inline-block;
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-left: 10px;
+        }
+        .instructions {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 12px;
+            color: #94a3b8;
+        }
+        .instructions code {
+            background: rgba(59, 130, 246, 0.2);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #60a5fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Skola Product Hunt Assets</h1>
+        <p class="subtitle">Click to download high-resolution images for your launch</p>
+        
+        <div class="gallery">
+            <div class="card">
+                <img src="ph-comparison-chart.png" alt="Platform Comparison Chart">
+                <div class="card-content">
+                    <h3>📊 Platform Comparison Chart</h3>
+                    <p>Shows creator earnings: Udemy 37%, Teachable 85%, Kajabi 92%, Skola 92%</p>
+                    <a href="ph-comparison-chart.png" download="skola-comparison-chart.png" class="download-btn">
+                        ⬇️ Download PNG
+                    </a>
+                    <span class="dimensions">1536 × 1024</span>
+                </div>
+            </div>
+            
+            <div class="card">
+                <img src="ph-how-it-works.png" alt="How It Works">
+                <div class="card-content">
+                    <h3>🔄 How It Works</h3>
+                    <p>3-step flow: Create Course → Set Price → Get Paid Instantly</p>
+                    <a href="ph-how-it-works.png" download="skola-how-it-works.png" class="download-btn">
+                        ⬇️ Download PNG
+                    </a>
+                    <span class="dimensions">1536 × 1024</span>
+                </div>
+            </div>
+            
+            <div class="card">
+                <img src="ph-features-checklist.png" alt="Features Checklist">
+                <div class="card-content">
+                    <h3>✅ Features Checklist</h3>
+                    <p>92% to creators, Instant payments, No monthly fees, Built-in referrals, ETH/USDC, Base L2</p>
+                    <a href="ph-features-checklist.png" download="skola-features.png" class="download-btn">
+                        ⬇️ Download PNG
+                    </a>
+                    <span class="dimensions">1536 × 1024</span>
+                </div>
+            </div>
+            
+            <div class="card">
+                <img src="screenshot-homepage.jpg" alt="Homepage Screenshot">
+                <div class="card-content">
+                    <h3>🏠 Homepage Screenshot</h3>
+                    <p>Real screenshot from skola.academy showing the hero section</p>
+                    <a href="screenshot-homepage.jpg" download="skola-homepage.jpg" class="download-btn">
+                        ⬇️ Download JPG
+                    </a>
+                    <span class="dimensions">Viewport</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <p><strong>Tip:</strong> Right-click any image and select "Save Image As" or use the download buttons.</p>
+            <p style="margin-top: 10px;">Files are located at: <code>/Users/mini/clawd/skola/media/</code></p>
+        </div>
+    </div>
+</body>
+</html>

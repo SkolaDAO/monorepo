@@ -4,6 +4,10 @@ import { BrowserRouter } from "react-router-dom";
 import { Providers } from "./lib/providers";
 import App from "./App";
 import "./index.css";
+import { initCapacitor } from "./lib/capacitor";
+
+// Initialize Capacitor native plugins
+initCapacitor();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

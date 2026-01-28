@@ -94,6 +94,76 @@ export const creatorRegistryAbi = [
     outputs: [{ type: "uint256" }],
     stateMutability: "view",
   },
+  // Admin functions
+  {
+    type: "function",
+    name: "isAdmin",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ type: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "admins",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ type: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "whitelistCreator",
+    inputs: [{ name: "creator", type: "address" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "whitelistCreators",
+    inputs: [{ name: "creatorList", type: "address[]" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "removeCreator",
+    inputs: [{ name: "creator", type: "address" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "setAdmin",
+    inputs: [
+      { name: "admin", type: "address" },
+      { name: "status", type: "bool" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "owner",
+    inputs: [],
+    outputs: [{ type: "address" }],
+    stateMutability: "view",
+  },
+  // Events for indexing
+  {
+    type: "event",
+    name: "CreatorWhitelisted",
+    inputs: [
+      { name: "creator", type: "address", indexed: true },
+      { name: "admin", type: "address", indexed: true },
+    ],
+  },
+  {
+    type: "event",
+    name: "CreatorRemoved",
+    inputs: [
+      { name: "creator", type: "address", indexed: true },
+      { name: "admin", type: "address", indexed: true },
+    ],
+  },
 ] as const;
 
 export const courseMarketplaceAbi = [

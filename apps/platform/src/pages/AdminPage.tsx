@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { Container, Button, Card, CardContent, Badge, cn } from "@skola/ui";
 import { useAuth } from "../contexts/AuthContext";
@@ -18,8 +18,17 @@ import {
   type AdminCreator,
   type AdminChannel,
 } from "../hooks/useAdmin";
+import {
+  useIsContractAdmin,
+  useWhitelistCreator,
+  useWhitelistCreators,
+  useRemoveCreatorOnchain,
+  useIsRegisteredOnchain,
+  useCreatorInfo,
+} from "../hooks/useCreatorRegistry";
+import { isAddress } from "viem";
 
-type Tab = "overview" | "users" | "courses" | "reports" | "creators" | "messages";
+type Tab = "overview" | "users" | "courses" | "reports" | "creators" | "messages" | "whitelist";
 
 export function AdminPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -57,6 +66,7 @@ export function AdminPage() {
               { id: "courses" as Tab, label: "Courses", icon: BookIcon },
               { id: "messages" as Tab, label: "Messages", icon: MessageIcon },
               { id: "reports" as Tab, label: "Reports", icon: FlagIcon },
+              { id: "whitelist" as Tab, label: "Onchain Whitelist", icon: LinkIcon },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -84,6 +94,7 @@ export function AdminPage() {
           {activeTab === "courses" && <CoursesTab />}
           {activeTab === "messages" && <MessagesTab />}
           {activeTab === "reports" && <ReportsTab />}
+          {activeTab === "whitelist" && <WhitelistTab />}
         </div>
       </Container>
     </div>
@@ -1045,6 +1056,397 @@ function ChannelMessages({
   );
 }
 
+function WhitelistTab() {
+  const { isAdmin: isContractAdmin, isLoading: adminLoading } = useIsContractAdmin();
+  const [singleAddress, setSingleAddress] = useState("");
+  const [batchAddresses, setBatchAddresses] = useState("");
+  const [checkAddress, setCheckAddress] = useState("");
+  const [removeAddress, setRemoveAddress] = useState("");
+  const [showRemoveModal, setShowRemoveModal] = useState(false);
+
+  // Single whitelist
+  const { 
+    whitelist, 
+    hash: singleHash, 
+    isPending: singlePending, 
+    isConfirming: singleConfirming, 
+    isSuccess: singleSuccess,
+    error: singleError,
+    reset: singleReset 
+  } = useWhitelistCreator();
+
+  // Batch whitelist
+  const { 
+    whitelistBatch, 
+    hash: batchHash, 
+    isPending: batchPending, 
+    isConfirming: batchConfirming, 
+    isSuccess: batchSuccess,
+    error: batchError,
+    reset: batchReset 
+  } = useWhitelistCreators();
+
+  // Remove creator
+  const {
+    remove,
+    hash: removeHash,
+    isPending: removePending,
+    isConfirming: removeConfirming,
+    isSuccess: removeSuccess,
+    error: removeError,
+    reset: removeReset,
+  } = useRemoveCreatorOnchain();
+
+  // Check registration status
+  const { isRegistered, isLoading: checkLoading, refetch: recheckStatus } = useIsRegisteredOnchain(
+    isAddress(checkAddress) ? (checkAddress as `0x${string}`) : undefined
+  );
+  const { paidUsdFormatted, paidAt } = useCreatorInfo(
+    isAddress(checkAddress) ? (checkAddress as `0x${string}`) : undefined
+  );
+
+  // Reset forms on success
+  useEffect(() => {
+    if (singleSuccess) {
+      setSingleAddress("");
+      setTimeout(() => singleReset(), 3000);
+    }
+  }, [singleSuccess, singleReset]);
+
+  useEffect(() => {
+    if (batchSuccess) {
+      setBatchAddresses("");
+      setTimeout(() => batchReset(), 3000);
+    }
+  }, [batchSuccess, batchReset]);
+
+  useEffect(() => {
+    if (removeSuccess) {
+      setRemoveAddress("");
+      setShowRemoveModal(false);
+      setTimeout(() => removeReset(), 3000);
+    }
+  }, [removeSuccess, removeReset]);
+
+  const parseBatchAddresses = (): `0x${string}`[] => {
+    return batchAddresses
+      .split(/[\n,;]+/)
+      .map(a => a.trim())
+      .filter(a => isAddress(a)) as `0x${string}`[];
+  };
+
+  const batchCount = parseBatchAddresses().length;
+
+  if (adminLoading) {
+    return <div className="text-center py-12 text-muted-foreground">Checking admin status...</div>;
+  }
+
+  if (!isContractAdmin) {
+    return (
+      <div className="text-center py-12">
+        <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-6 max-w-md mx-auto">
+          <ShieldAlertIcon className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <h3 className="font-semibold text-lg mb-2">Not Authorized</h3>
+          <p className="text-sm text-muted-foreground">
+            Your connected wallet is not an admin on the CreatorRegistry contract.
+            Contact the contract owner to get admin access.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Info Banner */}
+      <Card className="bg-primary/5 border-primary/20">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <LinkIcon className="h-5 w-5 text-primary mt-0.5" />
+            <div>
+              <p className="font-medium">Onchain Creator Whitelist</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Whitelist addresses directly on the CreatorRegistry smart contract. 
+                Whitelisted creators can publish courses without paying the registration fee.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Single Whitelist */}
+        <Card>
+          <CardContent className="p-6">
+            <h3 className="font-semibold mb-4 flex items-center gap-2">
+              <PlusIcon className="h-4 w-4" />
+              Whitelist Single Address
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Wallet Address</label>
+                <input
+                  type="text"
+                  value={singleAddress}
+                  onChange={(e) => setSingleAddress(e.target.value)}
+                  placeholder="0x..."
+                  className="mt-1 w-full px-3 py-2 rounded-lg border border-border bg-background text-sm font-mono"
+                  disabled={singlePending || singleConfirming}
+                />
+                {singleAddress && !isAddress(singleAddress) && (
+                  <p className="text-xs text-destructive mt-1">Invalid Ethereum address</p>
+                )}
+              </div>
+
+              <Button
+                className="w-full"
+                onClick={() => whitelist(singleAddress as `0x${string}`)}
+                disabled={!isAddress(singleAddress) || singlePending || singleConfirming}
+              >
+                {singlePending ? "Confirm in Wallet..." : singleConfirming ? "Confirming..." : "Whitelist Creator"}
+              </Button>
+
+              {singleSuccess && (
+                <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                    ✓ Successfully whitelisted! 
+                    {singleHash && (
+                      <a 
+                        href={`https://basescan.org/tx/${singleHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline ml-1"
+                      >
+                        View tx
+                      </a>
+                    )}
+                  </p>
+                </div>
+              )}
+
+              {singleError && (
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                  <p className="text-xs text-destructive">
+                    Error: {(singleError as Error).message?.slice(0, 100)}
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Batch Whitelist */}
+        <Card>
+          <CardContent className="p-6">
+            <h3 className="font-semibold mb-4 flex items-center gap-2">
+              <UsersIcon className="h-4 w-4" />
+              Batch Whitelist
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">
+                  Wallet Addresses 
+                  {batchCount > 0 && <span className="text-muted-foreground ml-1">({batchCount} valid)</span>}
+                </label>
+                <textarea
+                  value={batchAddresses}
+                  onChange={(e) => setBatchAddresses(e.target.value)}
+                  placeholder="Enter addresses separated by newlines, commas, or semicolons...&#10;0x123...&#10;0x456..."
+                  className="mt-1 w-full px-3 py-2 rounded-lg border border-border bg-background text-sm font-mono resize-none"
+                  rows={5}
+                  disabled={batchPending || batchConfirming}
+                />
+              </div>
+
+              <Button
+                className="w-full"
+                onClick={() => whitelistBatch(parseBatchAddresses())}
+                disabled={batchCount === 0 || batchPending || batchConfirming}
+              >
+                {batchPending ? "Confirm in Wallet..." : batchConfirming ? "Confirming..." : `Whitelist ${batchCount} Creators`}
+              </Button>
+
+              {batchSuccess && (
+                <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                    ✓ Successfully whitelisted batch! 
+                    {batchHash && (
+                      <a 
+                        href={`https://basescan.org/tx/${batchHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline ml-1"
+                      >
+                        View tx
+                      </a>
+                    )}
+                  </p>
+                </div>
+              )}
+
+              {batchError && (
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                  <p className="text-xs text-destructive">
+                    Error: {(batchError as Error).message?.slice(0, 100)}
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Check Status */}
+        <Card>
+          <CardContent className="p-6">
+            <h3 className="font-semibold mb-4 flex items-center gap-2">
+              <SearchIcon className="h-4 w-4" />
+              Check Registration Status
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Wallet Address</label>
+                <input
+                  type="text"
+                  value={checkAddress}
+                  onChange={(e) => setCheckAddress(e.target.value)}
+                  placeholder="0x..."
+                  className="mt-1 w-full px-3 py-2 rounded-lg border border-border bg-background text-sm font-mono"
+                />
+              </div>
+
+              {isAddress(checkAddress) && (
+                <div className="p-4 rounded-lg bg-muted">
+                  {checkLoading ? (
+                    <p className="text-sm text-muted-foreground">Checking...</p>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Status:</span>
+                        <Badge variant={isRegistered ? "default" : "secondary"}>
+                          {isRegistered ? "✓ Registered" : "Not Registered"}
+                        </Badge>
+                      </div>
+                      {isRegistered && (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Paid:</span>
+                            <span className="text-sm">{paidUsdFormatted}</span>
+                          </div>
+                          {paidAt && paidAt > 0n && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-muted-foreground">Registered:</span>
+                              <span className="text-sm">
+                                {new Date(Number(paidAt) * 1000).toLocaleDateString()}
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full mt-2"
+                        onClick={() => recheckStatus()}
+                      >
+                        Refresh
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Remove Creator */}
+        <Card>
+          <CardContent className="p-6">
+            <h3 className="font-semibold mb-4 flex items-center gap-2 text-destructive">
+              <TrashIcon className="h-4 w-4" />
+              Remove Creator Registration
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Wallet Address</label>
+                <input
+                  type="text"
+                  value={removeAddress}
+                  onChange={(e) => setRemoveAddress(e.target.value)}
+                  placeholder="0x..."
+                  className="mt-1 w-full px-3 py-2 rounded-lg border border-border bg-background text-sm font-mono"
+                  disabled={removePending || removeConfirming}
+                />
+                {removeAddress && !isAddress(removeAddress) && (
+                  <p className="text-xs text-destructive mt-1">Invalid Ethereum address</p>
+                )}
+              </div>
+
+              <Button
+                variant="destructive"
+                className="w-full"
+                onClick={() => setShowRemoveModal(true)}
+                disabled={!isAddress(removeAddress) || removePending || removeConfirming}
+              >
+                Remove Creator
+              </Button>
+
+              {removeSuccess && (
+                <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                    ✓ Successfully removed! 
+                    {removeHash && (
+                      <a 
+                        href={`https://basescan.org/tx/${removeHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline ml-1"
+                      >
+                        View tx
+                      </a>
+                    )}
+                  </p>
+                </div>
+              )}
+
+              {removeError && (
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                  <p className="text-xs text-destructive">
+                    Error: {(removeError as Error).message?.slice(0, 100)}
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {showRemoveModal && (
+        <Modal
+          title="Remove Creator"
+          onClose={() => setShowRemoveModal(false)}
+          onConfirm={() => remove(removeAddress as `0x${string}`)}
+          isLoading={removePending || removeConfirming}
+          confirmLabel={removePending ? "Confirm in Wallet..." : removeConfirming ? "Confirming..." : "Remove"}
+          confirmVariant="destructive"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to remove the creator registration for:
+            </p>
+            <p className="font-mono text-sm bg-muted p-2 rounded break-all">{removeAddress}</p>
+            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+              <p className="text-xs text-destructive">
+                <strong>Warning:</strong> This will remove their ability to create courses. 
+                They will need to register again (and pay the fee) to publish new courses.
+              </p>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
 interface ModalProps {
   title: string;
   children: React.ReactNode;
@@ -1245,6 +1647,30 @@ function TrashIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+    </svg>
+  );
+}
+
+function LinkIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+    </svg>
+  );
+}
+
+function ShieldAlertIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v2m0 4h.01" />
+    </svg>
+  );
+}
+
+function SearchIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
     </svg>
   );
 }

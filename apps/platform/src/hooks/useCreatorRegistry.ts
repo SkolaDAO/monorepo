@@ -1,7 +1,8 @@
 import { useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { formatEther, formatUnits } from "viem";
+import { formatEther, formatUnits, isAddress } from "viem";
 import { useQuery } from "@tanstack/react-query";
 import { useContractConfig } from "./useContracts";
+import { useAccount } from "wagmi";
 
 export function useEthPrice() {
   const { creatorRegistry } = useContractConfig();
@@ -106,4 +107,100 @@ export function useRegisterWithUSDC() {
   };
 
   return { register, hash, isPending, isConfirming, isSuccess, error };
+}
+
+// ============ Admin Functions ============
+
+export function useIsContractAdmin() {
+  const { address } = useAccount();
+  const { creatorRegistry } = useContractConfig();
+
+  const { data: isAdmin, isLoading, refetch } = useReadContract({
+    ...creatorRegistry,
+    functionName: "isAdmin",
+    args: address ? [address] : undefined,
+    query: { enabled: !!address, staleTime: 60_000 },
+  });
+
+  return { isAdmin: isAdmin ?? false, isLoading, refetch };
+}
+
+export function useContractOwner() {
+  const { creatorRegistry } = useContractConfig();
+
+  const { data: owner, isLoading } = useReadContract({
+    ...creatorRegistry,
+    functionName: "owner",
+    query: { staleTime: 300_000 },
+  });
+
+  return { owner, isLoading };
+}
+
+export function useIsRegisteredOnchain(address: `0x${string}` | undefined) {
+  const { creatorRegistry } = useContractConfig();
+
+  const { data: isRegistered, isLoading, refetch } = useReadContract({
+    ...creatorRegistry,
+    functionName: "isRegistered",
+    args: address ? [address] : undefined,
+    query: { enabled: !!address, staleTime: 30_000 },
+  });
+
+  return { isRegistered: isRegistered ?? false, isLoading, refetch };
+}
+
+export function useWhitelistCreator() {
+  const { creatorRegistry } = useContractConfig();
+  const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
+
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+
+  const whitelist = (address: `0x${string}`) => {
+    if (!isAddress(address)) return;
+    writeContract({
+      ...creatorRegistry,
+      functionName: "whitelistCreator",
+      args: [address],
+    });
+  };
+
+  return { whitelist, hash, isPending, isConfirming, isSuccess, error, reset };
+}
+
+export function useWhitelistCreators() {
+  const { creatorRegistry } = useContractConfig();
+  const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
+
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+
+  const whitelistBatch = (addresses: `0x${string}`[]) => {
+    const valid = addresses.filter(a => isAddress(a));
+    if (valid.length === 0) return;
+    writeContract({
+      ...creatorRegistry,
+      functionName: "whitelistCreators",
+      args: [valid],
+    });
+  };
+
+  return { whitelistBatch, hash, isPending, isConfirming, isSuccess, error, reset };
+}
+
+export function useRemoveCreatorOnchain() {
+  const { creatorRegistry } = useContractConfig();
+  const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
+
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+
+  const remove = (address: `0x${string}`) => {
+    if (!isAddress(address)) return;
+    writeContract({
+      ...creatorRegistry,
+      functionName: "removeCreator",
+      args: [address],
+    });
+  };
+
+  return { remove, hash, isPending, isConfirming, isSuccess, error, reset };
 }

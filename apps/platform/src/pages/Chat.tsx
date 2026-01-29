@@ -74,6 +74,21 @@ function AuthenticatedChat({ userId }: { userId: string }) {
     setSelectedRoomType(room.type);
   };
 
+  const handleBack = () => {
+    setSelectedRoomId(null);
+    setSelectedRoomType(null);
+  };
+
+  // Find selected room name for the mobile header
+  const selectedRoom = selectedRoomId
+    ? [...dmRooms, ...communityRooms].find((r) => r.id === selectedRoomId)
+    : null;
+  const selectedRoomName = selectedRoom
+    ? selectedRoom.type === "dm"
+      ? selectedRoom.otherUser?.username || truncateAddress(selectedRoom.otherUser?.address || "")
+      : selectedRoom.course?.title || "Community"
+    : "";
+
   if (isLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -82,9 +97,17 @@ function AuthenticatedChat({ userId }: { userId: string }) {
     );
   }
 
+  const hasRoom = selectedRoomId && selectedRoomType;
+
   return (
     <div className="flex h-[calc(100vh-4rem)]">
-      <aside className="w-80 shrink-0 overflow-y-auto border-r border-border">
+      {/* Sidebar — always visible on md+, hidden on mobile when a room is selected */}
+      <aside
+        className={cn(
+          "w-full shrink-0 overflow-y-auto border-r border-border md:block md:w-80",
+          hasRoom ? "hidden" : "block"
+        )}
+      >
         <div className="sticky top-0 border-b border-border bg-background p-4">
           <h2 className="font-semibold">Messages</h2>
         </div>
@@ -131,9 +154,28 @@ function AuthenticatedChat({ userId }: { userId: string }) {
         )}
       </aside>
 
-      <main className="flex flex-1 flex-col">
-        {selectedRoomId && selectedRoomType ? (
-          <ChatRoom roomId={selectedRoomId} userId={userId} />
+      {/* Chat area — always visible on md+, hidden on mobile when no room selected */}
+      <main
+        className={cn(
+          "flex flex-1 flex-col",
+          hasRoom ? "flex" : "hidden md:flex"
+        )}
+      >
+        {hasRoom ? (
+          <>
+            {/* Mobile back header */}
+            <div className="flex items-center gap-2 border-b border-border p-3 md:hidden">
+              <button
+                onClick={handleBack}
+                className="rounded-lg p-1.5 hover:bg-muted"
+                aria-label="Back to messages"
+              >
+                <BackIcon className="h-5 w-5" />
+              </button>
+              <span className="font-semibold truncate">{selectedRoomName}</span>
+            </div>
+            <ChatRoom roomId={selectedRoomId!} userId={userId} />
+          </>
         ) : (
           <div className="flex h-full items-center justify-center text-muted-foreground">
             Select a conversation to start chatting
@@ -341,6 +383,14 @@ function UsersIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+    </svg>
+  );
+}
+
+function BackIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
     </svg>
   );
 }

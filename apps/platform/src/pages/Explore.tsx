@@ -5,6 +5,8 @@ import { Button, Card, CardContent, CardHeader, CardTitle, Container, Badge, cn 
 import { useCourses } from "../hooks/useApiCourses";
 import { useCategories } from "../hooks/useCategories";
 import { VerifiedBadge } from "../components/VerifiedBadge";
+import { MobileHomeFeed } from "../components/MobileHomeFeed";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -20,6 +22,7 @@ const staggerContainer = {
 };
 
 export function ExplorePage() {
+  const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
   const categorySlug = searchParams.get("category") || undefined;
   const freeOnly = searchParams.get("free") === "true";
@@ -31,9 +34,11 @@ export function ExplorePage() {
   const isHeroInView = useInView(heroRef, { once: true });
 
   const { categories, isLoading: categoriesLoading } = useCategories();
+
+  // Desktop: paginated fetch
   const { data, isLoading: coursesLoading } = useCourses({
     page,
-    limit: 12,
+    limit: isMobile ? 50 : 12,
     search: searchQuery,
     category: categorySlug,
     free: freeOnly ? true : undefined,
@@ -41,6 +46,13 @@ export function ExplorePage() {
 
   const courses = data?.data || [];
   const pagination = data?.pagination;
+
+  // Mobile: show TikTok-style feed
+  if (isMobile) {
+    return (
+      <MobileHomeFeed courses={courses} isLoading={coursesLoading} />
+    );
+  }
 
   const handleCategoryClick = (slug: string | null) => {
     const params = new URLSearchParams(searchParams);

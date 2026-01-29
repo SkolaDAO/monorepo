@@ -6,6 +6,7 @@ import { ThemeToggle, cn } from "@skola/ui";
 import { useAuth } from "../contexts/AuthContext";
 import { useUnreadCount } from "../hooks/useNotifications";
 import { NotificationsDropdown } from "./NotificationsDropdown";
+import { MobileBottomNav } from "./MobileBottomNav";
 
 // Sidebar context for global collapse state
 interface SidebarContextType {
@@ -66,11 +67,17 @@ export function Layout() {
           "flex flex-1 flex-col overflow-hidden transition-all duration-300",
           isCollapsed ? "lg:pl-20" : "lg:pl-64"
         )}>
+          {/* Mobile header - slim, visible only on mobile */}
+          <MobileHeader onMenuClick={() => setMobileOpen(true)} />
+          {/* Desktop top bar - visible only on desktop */}
           <TopBar onMenuClick={() => setMobileOpen(true)} />
-          <main className="flex-1 overflow-y-auto bg-gradient-animated scrollbar-thin">
+          <main className="flex-1 overflow-y-auto bg-gradient-animated scrollbar-thin pb-20 lg:pb-0">
             <Outlet />
           </main>
         </div>
+
+        {/* Mobile bottom navigation */}
+        <MobileBottomNav />
 
         {mobileOpen && (
           <div
@@ -248,22 +255,71 @@ interface TopBarProps {
   onMenuClick: () => void;
 }
 
-function TopBar({ onMenuClick }: TopBarProps) {
-  const { isConnected } = useAccount();
-  const { isAuthenticated, isSigningIn } = useAuth();
-  const { count: unreadCount } = useUnreadCount();
-
+function MobileHeader({ onMenuClick }: { onMenuClick: () => void }) {
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-lg lg:px-6">
+    <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border/50 bg-background/80 px-4 backdrop-blur-lg lg:hidden">
+      {/* Left: Hamburger */}
       <button
         onClick={onMenuClick}
-        className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground lg:hidden"
+        className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
         aria-label="Open menu"
       >
         <MenuIcon className="h-6 w-6" />
       </button>
 
-      <div className="hidden lg:block" />
+      {/* Center: Logo */}
+      <Link to="/" className="flex items-center gap-2">
+        <img src="/logo.png" alt="Skola" className="h-8 w-8" />
+        <span className="text-lg font-bold">Skola</span>
+      </Link>
+
+      {/* Right: Compact connect button */}
+      <div className="flex items-center">
+        <ConnectButton.Custom>
+          {({ account, chain, openAccountModal, openConnectModal, mounted }) => {
+            const connected = mounted && account && chain;
+            return (
+              <div
+                {...(!mounted && {
+                  "aria-hidden": true,
+                  style: { opacity: 0, pointerEvents: "none" as const, userSelect: "none" as const },
+                })}
+              >
+                {connected ? (
+                  <button
+                    onClick={openAccountModal}
+                    className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+                  >
+                    {account.displayBalance ? (
+                      <span className="hidden xs:inline">{account.displayBalance}</span>
+                    ) : null}
+                    <span>{account.displayName}</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={openConnectModal}
+                    className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                  >
+                    Connect
+                  </button>
+                )}
+              </div>
+            );
+          }}
+        </ConnectButton.Custom>
+      </div>
+    </header>
+  );
+}
+
+function TopBar({ onMenuClick: _ }: TopBarProps) {
+  const { isConnected } = useAccount();
+  const { isAuthenticated, isSigningIn } = useAuth();
+  const { count: unreadCount } = useUnreadCount();
+
+  return (
+    <header className="sticky top-0 z-40 hidden h-16 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-lg lg:flex lg:px-6">
+      <div />
 
       <div className="flex items-center gap-3">
         {isConnected && isSigningIn && (

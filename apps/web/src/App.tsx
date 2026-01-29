@@ -4,6 +4,7 @@ import { Button, Badge, Container, ThemeToggle, cn } from "@skola/ui";
 import { FaXTwitter, FaDiscord, FaGithub } from "react-icons/fa6";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://api.skola.academy";
+const MEDIUM_USERNAME = import.meta.env.VITE_MEDIUM_USERNAME || "skoladao";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
       <HowItWorks />
       <Pricing />
       <Comparison />
+      <Blog />
       <FAQ />
       <CTA />
       <Footer />
@@ -103,6 +105,7 @@ function Header() {
                 { href: "#features", label: "Features" },
                 { href: "#how-it-works", label: "How It Works" },
                 { href: "#pricing", label: "Pricing" },
+                { href: "#blog", label: "Blog" },
                 { href: "https://docs.skola.academy", label: "Docs", external: true },
               ].map((link) => (
                 <motion.a
@@ -166,7 +169,7 @@ function Header() {
                 </button>
               </div>
               <nav className="flex flex-col items-center justify-center flex-1 gap-8">
-                {["Features", "How It Works", "Pricing", "Docs"].map((item) => (
+                {["Features", "How It Works", "Pricing", "Blog", "Docs"].map((item) => (
                   <a
                     key={item}
                     href={item === "Docs" ? "https://docs.skola.academy" : `#${item.toLowerCase().replace(/ /g, "-")}`}
@@ -1011,6 +1014,174 @@ function Comparison() {
   );
 }
 
+// Medium article types
+interface MediumArticle {
+  title: string;
+  link: string;
+  pubDate: string;
+  thumbnail: string;
+  description: string;
+  categories: string[];
+}
+
+function useMediumArticles() {
+  const [articles, setArticles] = useState<MediumArticle[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        // Using rss2json API to convert Medium RSS to JSON (handles CORS)
+        const response = await fetch(
+          `https://api.rss2json.com/v1/api.json?rss_url=https://medium.com/feed/@${MEDIUM_USERNAME}`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data.status === "ok" && data.items) {
+            setArticles(data.items.slice(0, 3).map((item: Record<string, unknown>) => ({
+              title: item.title as string,
+              link: item.link as string,
+              pubDate: item.pubDate as string,
+              thumbnail: (item.thumbnail as string) || "",
+              description: ((item.description as string) || "").replace(/<[^>]*>/g, "").slice(0, 150) + "...",
+              categories: (item.categories as string[]) || [],
+            })));
+          }
+        }
+      } catch {
+        // Silently fail - blog section will be hidden
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchArticles();
+  }, []);
+
+  return { articles, isLoading };
+}
+
+function Blog() {
+  const ref = useRef<HTMLElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const { articles, isLoading } = useMediumArticles();
+
+  // Don't render if no articles and not loading
+  if (!isLoading && articles.length === 0) {
+    return null;
+  }
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  return (
+    <section ref={ref} id="blog" className="py-20 md:py-32">
+      <Container>
+        <motion.div
+          initial="hidden"
+          animate={isInView ? "visible" : "hidden"}
+          variants={staggerContainer}
+        >
+          <motion.div variants={fadeUpVariant} className="text-center mb-12">
+            <Badge className="mb-4">From Our Blog</Badge>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
+              Insights & Resources
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Learn about the creator economy, Web3 education, and building successful online courses.
+            </p>
+          </motion.div>
+
+          {isLoading ? (
+            <div className="grid md:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-card rounded-2xl overflow-hidden border border-border/50 animate-pulse">
+                  <div className="aspect-video bg-muted" />
+                  <div className="p-6 space-y-3">
+                    <div className="h-4 bg-muted rounded w-1/4" />
+                    <div className="h-6 bg-muted rounded w-3/4" />
+                    <div className="h-4 bg-muted rounded w-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <motion.div
+              variants={staggerContainer}
+              className="grid md:grid-cols-3 gap-6"
+            >
+              {articles.map((article) => (
+                <motion.a
+                  key={article.link}
+                  href={article.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variants={fadeUpVariant}
+                  whileHover={{ y: -8, transition: { duration: 0.2 } }}
+                  className="group relative bg-card rounded-2xl overflow-hidden border border-border/50 hover:border-primary/50 transition-colors"
+                >
+                  <div className="relative aspect-video overflow-hidden bg-muted">
+                    {article.thumbnail ? (
+                      <img
+                        src={article.thumbnail}
+                        alt={article.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
+                        <svg className="w-12 h-12 text-primary/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                        </svg>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                  </div>
+                  <div className="p-6">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                      <time>{formatDate(article.pubDate)}</time>
+                      {article.categories[0] && (
+                        <>
+                          <span>•</span>
+                          <span className="text-primary">{article.categories[0]}</span>
+                        </>
+                      )}
+                    </div>
+                    <h3 className="font-semibold text-lg mb-2 group-hover:text-primary transition-colors line-clamp-2">
+                      {article.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {article.description}
+                    </p>
+                  </div>
+                </motion.a>
+              ))}
+            </motion.div>
+          )}
+
+          <motion.div variants={fadeUpVariant} className="text-center mt-10">
+            <a
+              href={`https://medium.com/@${MEDIUM_USERNAME}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button variant="outline" size="lg" className="group">
+                Read More on Medium
+                <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </Button>
+            </a>
+          </motion.div>
+        </motion.div>
+      </Container>
+    </section>
+  );
+}
+
 function FAQ() {
   const ref = useRef<HTMLElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
@@ -1186,6 +1357,7 @@ function Footer() {
     ],
     Resources: [
       { label: "Documentation", href: "https://docs.skola.academy" },
+      { label: "Blog", href: "#blog" },
       { label: "GitHub", href: "https://github.com/SkolaDAO/monorepo" },
     ],
     Community: [

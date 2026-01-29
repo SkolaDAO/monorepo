@@ -302,7 +302,7 @@ export function CourseLearnPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] lg:flex-row">
+    <div className="flex flex-col h-[calc(100dvh-8rem)] lg:h-[calc(100dvh-4rem)] lg:flex-row">
       <div className="flex items-center gap-3 border-b border-border p-3 lg:hidden">
         <Link
           to={`/course/${id}`}
@@ -419,7 +419,7 @@ export function CourseLearnPage() {
         )}
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <div className="fixed bottom-20 lg:bottom-0 left-0 right-0 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 z-40">
         <div className="flex items-center justify-between px-4 py-3 lg:pl-80">
           <button
             onClick={() => navigateToLesson(prevLesson)}

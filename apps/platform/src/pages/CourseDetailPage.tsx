@@ -56,7 +56,7 @@ export function CourseDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24 lg:pb-8">
+    <div className="min-h-screen bg-background pb-40 lg:pb-8">
       <div className="relative">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
         
@@ -335,7 +335,7 @@ export function CourseDetailPage() {
         </Container>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 border-t border-border bg-background/95 p-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:hidden">
+      <div className="fixed inset-x-0 bottom-20 border-t border-border bg-background/95 p-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:hidden z-40">
         <MobilePurchaseBar course={course} />
       </div>
 

@@ -283,20 +283,26 @@ export function CourseLearnPage() {
     );
   }
 
-  if (!hasAccess) {
+  const hasAnyAccessibleLesson = allLessons.some((l) => l.canAccess);
+
+  if (!hasAccess && !hasAnyAccessibleLesson) {
     return (
-      <div className="py-8">
-        <Container>
-          <div className="text-center">
-            <h1 className="text-2xl font-bold">Access Required</h1>
-            <p className="mt-2 text-muted-foreground">
-              You need to purchase this course to access the content.
-            </p>
-            <Link to={`/course/${id}`}>
-              <Button className="mt-4">View Course Details</Button>
-            </Link>
-          </div>
-        </Container>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center">
+        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+          <LockIcon className="h-10 w-10 text-primary" />
+        </div>
+        <h1 className="text-2xl font-bold mb-2">Access Required</h1>
+        <p className="text-muted-foreground mb-6 max-w-sm">
+          Purchase this course to unlock all lessons and start learning.
+        </p>
+        <div className="flex flex-col gap-3 w-full max-w-xs">
+          <Link to={`/course/${id}/buy`}>
+            <Button className="w-full" size="lg">Purchase Course</Button>
+          </Link>
+          <Link to={`/course/${id}`}>
+            <Button variant="outline" className="w-full" size="lg">View Course Details</Button>
+          </Link>
+        </div>
       </div>
     );
   }

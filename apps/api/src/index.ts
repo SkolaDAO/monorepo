@@ -19,6 +19,8 @@ import { adminRouter } from "./routes/admin";
 import { reportsRouter } from "./routes/reports";
 import { feedbackRouter } from "./routes/feedback";
 import analyticsRouter from "./routes/analytics";
+import { likesRouter } from "./routes/likes";
+import { commentsRouter } from "./routes/comments";
 
 const app = new Hono();
 
@@ -51,6 +53,8 @@ app.route("/admin", adminRouter);
 app.route("/reports", reportsRouter);
 app.route("/feedback", feedbackRouter);
 app.route("/analytics", analyticsRouter);
+app.route("/", likesRouter);
+app.route("/", commentsRouter);
 
 app.onError((err, c) => {
   if (err instanceof HTTPException) {

@@ -7,6 +7,7 @@ import {
   boolean,
   pgEnum,
   index,
+  uniqueIndex,
   jsonb,
   decimal,
 } from "drizzle-orm/pg-core";
@@ -578,5 +579,67 @@ export const analyticsEventsRelations = relations(analyticsEvents, ({ one }) => 
   lesson: one(lessons, {
     fields: [analyticsEvents.lessonId],
     references: [lessons.id],
+  }),
+}));
+
+// Course likes
+export const courseLikes = pgTable(
+  "course_likes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    courseId: uuid("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_course_likes_user").on(table.userId),
+    index("idx_course_likes_course").on(table.courseId),
+    uniqueIndex("idx_course_likes_user_course").on(table.userId, table.courseId),
+  ]
+);
+
+export const courseLikesRelations = relations(courseLikes, ({ one }) => ({
+  user: one(users, {
+    fields: [courseLikes.userId],
+    references: [users.id],
+  }),
+  course: one(courses, {
+    fields: [courseLikes.courseId],
+    references: [courses.id],
+  }),
+}));
+
+// Course comments
+export const courseComments = pgTable(
+  "course_comments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    courseId: uuid("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_course_comments_course").on(table.courseId),
+    index("idx_course_comments_user").on(table.userId),
+  ]
+);
+
+export const courseCommentsRelations = relations(courseComments, ({ one }) => ({
+  user: one(users, {
+    fields: [courseComments.userId],
+    references: [users.id],
+  }),
+  course: one(courses, {
+    fields: [courseComments.courseId],
+    references: [courses.id],
   }),
 }));

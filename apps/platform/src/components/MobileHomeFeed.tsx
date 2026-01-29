@@ -1,8 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge, Button, cn } from "@skola/ui";
 import type { Course } from "../lib/api";
+import { api } from "../lib/api";
+import { useLikedCourseIds, useToggleLike } from "../hooks/useCourseLikes";
+import { CommentsSheet } from "./CommentsSheet";
 
 interface MobileHomeFeedProps {
   courses: CourseWithCategories[];
@@ -20,6 +23,65 @@ type CourseWithCategories = Course & {
 };
 
 export function MobileHomeFeed({ courses, isLoading }: MobileHomeFeedProps) {
+  const { likedIds, setLikedIds } = useLikedCourseIds();
+  const { toggleLike } = useToggleLike();
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
+  const [commentsCourseId, setCommentsCourseId] = useState<string | null>(null);
+
+  // Initialize like counts from course data
+  useEffect(() => {
+    const counts: Record<string, number> = {};
+    courses.forEach((c) => {
+      counts[c.id] = c.likeCount ?? 0;
+    });
+    setLikeCounts(counts);
+  }, [courses]);
+
+  const handleLike = useCallback(
+    async (courseId: string) => {
+      if (!api.isAuthenticated()) return;
+
+      const wasLiked = likedIds.has(courseId);
+
+      // Optimistic update
+      setLikedIds((prev) => {
+        const next = new Set(prev);
+        if (wasLiked) next.delete(courseId);
+        else next.add(courseId);
+        return next;
+      });
+      setLikeCounts((prev) => ({
+        ...prev,
+        [courseId]: Math.max(0, (prev[courseId] ?? 0) + (wasLiked ? -1 : 1)),
+      }));
+
+      try {
+        const result = await toggleLike(courseId);
+        // Sync with server truth
+        setLikeCounts((prev) => ({ ...prev, [courseId]: result.likeCount }));
+        setLikedIds((prev) => {
+          const next = new Set(prev);
+          if (result.liked) next.add(courseId);
+          else next.delete(courseId);
+          return next;
+        });
+      } catch {
+        // Revert on error
+        setLikedIds((prev) => {
+          const next = new Set(prev);
+          if (wasLiked) next.add(courseId);
+          else next.delete(courseId);
+          return next;
+        });
+        setLikeCounts((prev) => ({
+          ...prev,
+          [courseId]: Math.max(0, (prev[courseId] ?? 0) + (wasLiked ? 1 : -1)),
+        }));
+      }
+    },
+    [likedIds, setLikedIds, toggleLike]
+  );
+
   if (isLoading) {
     return <FeedSkeleton />;
   }
@@ -41,33 +103,58 @@ export function MobileHomeFeed({ courses, isLoading }: MobileHomeFeedProps) {
   }
 
   return (
-    <div
-      className="h-[calc(100dvh-8rem)] snap-y snap-mandatory overflow-y-auto overscroll-contain scrollbar-none"
-      style={{ WebkitOverflowScrolling: "touch" }}
-    >
-      {courses.map((course) => (
-        <FeedCard key={course.id} course={course} />
-      ))}
-    </div>
+    <>
+      <div
+        className="h-[calc(100dvh-8rem)] snap-y snap-mandatory overflow-y-auto overscroll-contain scrollbar-none"
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
+        {courses.map((course) => (
+          <FeedCard
+            key={course.id}
+            course={course}
+            isLiked={likedIds.has(course.id)}
+            likeCount={likeCounts[course.id] ?? course.likeCount ?? 0}
+            commentCount={course.commentCount ?? 0}
+            onLike={() => handleLike(course.id)}
+            onOpenComments={() => setCommentsCourseId(course.id)}
+          />
+        ))}
+      </div>
+
+      {/* Comments bottom sheet */}
+      <CommentsSheet
+        isOpen={!!commentsCourseId}
+        onClose={() => setCommentsCourseId(null)}
+        courseId={commentsCourseId || ""}
+      />
+    </>
   );
 }
 
-function FeedCard({ course }: { course: CourseWithCategories }) {
-  const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(() => Math.floor(Math.random() * 200) + 10);
-
-  const handleLike = useCallback(() => {
-    setIsLiked((prev) => {
-      setLikeCount((c) => (prev ? c - 1 : c + 1));
-      return !prev;
-    });
-  }, []);
-
+function FeedCard({
+  course,
+  isLiked,
+  likeCount,
+  commentCount,
+  onLike,
+  onOpenComments,
+}: {
+  course: CourseWithCategories;
+  isLiked: boolean;
+  likeCount: number;
+  commentCount: number;
+  onLike: () => void;
+  onOpenComments: () => void;
+}) {
   const truncateAddress = (address: string) =>
     `${address.slice(0, 6)}...${address.slice(-4)}`;
 
   const displayName =
     course.creator?.username || truncateAddress(course.creator?.address || "0x0000");
+
+  // Truncate description
+  const description = course.description || "";
+  const shortDesc = description.length > 100 ? description.slice(0, 100) + "…" : description;
 
   return (
     <div className="relative h-[calc(100dvh-8rem)] w-full snap-start snap-always">
@@ -113,9 +200,24 @@ function FeedCard({ course }: { course: CourseWithCategories }) {
           )}
 
           {/* Course title */}
-          <h2 className="mb-2 text-xl font-bold leading-tight text-white drop-shadow-lg line-clamp-3">
+          <h2 className="mb-1 text-xl font-bold leading-tight text-white drop-shadow-lg line-clamp-3">
             {course.title}
           </h2>
+
+          {/* Description */}
+          {shortDesc && (
+            <p className="mb-2 text-sm text-white/70 line-clamp-2">
+              {shortDesc}
+              {description.length > 100 && (
+                <Link
+                  to={`/course/${course.id}`}
+                  className="ml-1 text-white/90 font-medium"
+                >
+                  more
+                </Link>
+              )}
+            </p>
+          )}
 
           {/* Creator info */}
           <div className="mb-3 flex items-center gap-2">
@@ -188,7 +290,7 @@ function FeedCard({ course }: { course: CourseWithCategories }) {
         <div className="flex flex-col items-center justify-end gap-5 pb-24 pr-3">
           {/* Like/Heart */}
           <ActionButton
-            onClick={handleLike}
+            onClick={onLike}
             label={formatCount(likeCount)}
           >
             <AnimatePresence mode="wait">
@@ -210,12 +312,13 @@ function FeedCard({ course }: { course: CourseWithCategories }) {
             </AnimatePresence>
           </ActionButton>
 
-          {/* Comment / Course detail */}
-          <Link to={`/course/${course.id}`}>
-            <ActionButton label={course.rating?.count ? formatCount(course.rating.count) : "0"}>
-              <CommentIcon className="h-7 w-7 text-white" />
-            </ActionButton>
-          </Link>
+          {/* Comments */}
+          <ActionButton
+            label={formatCount(commentCount)}
+            onClick={onOpenComments}
+          >
+            <CommentIcon className="h-7 w-7 text-white" />
+          </ActionButton>
 
           {/* Share */}
           <ActionButton

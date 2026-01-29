@@ -196,6 +196,8 @@ export interface Course {
   previewPercentage: number;
   lessonCount: number;
   hasAccess?: boolean;
+  likeCount?: number;
+  commentCount?: number;
   rating?: {
     average: number;
     count: number;
@@ -209,6 +211,19 @@ export interface Course {
     isVerified?: boolean;
   };
   chapters?: Chapter[];
+}
+
+export interface CourseComment {
+  id: string;
+  courseId: string;
+  content: string;
+  createdAt: string;
+  user: {
+    id: string;
+    address: string;
+    username: string | null;
+    avatar: string | null;
+  };
 }
 
 export interface Lesson {

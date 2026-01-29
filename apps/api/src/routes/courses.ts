@@ -3,7 +3,7 @@ import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { eq, desc, and, sql, ilike, or, inArray } from "drizzle-orm";
 import { db } from "../db";
-import { courses, purchases, chatRooms, creatorStats, courseCategories, categories, lessonProgress, feedback } from "../db/schema";
+import { courses, purchases, chatRooms, creatorStats, courseCategories, categories, lessonProgress, feedback, courseLikes, courseComments } from "../db/schema";
 import { authMiddleware, optionalAuthMiddleware, creatorMiddleware } from "../middleware/auth";
 import { checkCourseAccess } from "../services/blockchain";
 import type { AppVariables } from "../types";
@@ -118,7 +118,7 @@ coursesRouter.get("/", zValidator("query", querySchema), optionalAuthMiddleware,
 
   const courseIds = courseList.map((c) => c.id);
 
-  const [purchaseCounts, progressCounts, ratings] = await Promise.all([
+  const [purchaseCounts, progressCounts, ratings, likeCounts, commentCounts] = await Promise.all([
     courseIds.length > 0
       ? db
           .select({
@@ -150,11 +150,33 @@ coursesRouter.get("/", zValidator("query", querySchema), optionalAuthMiddleware,
           .where(inArray(feedback.courseId, courseIds))
           .groupBy(feedback.courseId)
       : [],
+    courseIds.length > 0
+      ? db
+          .select({
+            courseId: courseLikes.courseId,
+            count: sql<number>`count(*)`,
+          })
+          .from(courseLikes)
+          .where(inArray(courseLikes.courseId, courseIds))
+          .groupBy(courseLikes.courseId)
+      : [],
+    courseIds.length > 0
+      ? db
+          .select({
+            courseId: courseComments.courseId,
+            count: sql<number>`count(*)`,
+          })
+          .from(courseComments)
+          .where(inArray(courseComments.courseId, courseIds))
+          .groupBy(courseComments.courseId)
+      : [],
   ]);
 
   const purchaseCountMap = new Map(purchaseCounts.map((p) => [p.courseId, Number(p.count)]));
   const progressCountMap = new Map(progressCounts.map((p) => [p.courseId, Number(p.count)]));
   const ratingMap = new Map(ratings.map((r) => [r.courseId, { avgRating: Number(r.avgRating), reviewCount: Number(r.reviewCount) }]));
+  const likeCountMap = new Map(likeCounts.map((l) => [l.courseId, Number(l.count)]));
+  const commentCountMap = new Map(commentCounts.map((cc) => [cc.courseId, Number(cc.count)]));
 
   return c.json({
     data: courseList.map((course) => {
@@ -169,6 +191,8 @@ coursesRouter.get("/", zValidator("query", querySchema), optionalAuthMiddleware,
         categories: course.courseCategories.map((cc) => cc.category),
         studentCount,
         rating: rating ? { average: rating.avgRating, count: rating.reviewCount } : null,
+        likeCount: likeCountMap.get(course.id) || 0,
+        commentCount: commentCountMap.get(course.id) || 0,
         chapters: undefined,
         courseCategories: undefined,
       };

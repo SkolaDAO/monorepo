@@ -76,7 +76,7 @@ export function CommentsSheet({ isOpen, onClose, courseId }: CommentsSheetProps)
         <>
           {/* Backdrop */}
           <motion.div
-            className="fixed inset-0 z-50 bg-black/50"
+            className="fixed inset-0 z-[60] bg-black/50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -85,8 +85,8 @@ export function CommentsSheet({ isOpen, onClose, courseId }: CommentsSheetProps)
 
           {/* Sheet */}
           <motion.div
-            className="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-2xl bg-background"
-            style={{ height: "60dvh" }}
+            className="fixed inset-x-0 bottom-0 z-[60] flex flex-col rounded-t-2xl bg-background"
+            style={{ height: "70dvh" }}
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
@@ -172,7 +172,10 @@ export function CommentsSheet({ isOpen, onClose, courseId }: CommentsSheetProps)
             </div>
 
             {/* Input bar */}
-            <div className="border-t border-border px-4 py-3 flex gap-2">
+            <div
+              className="border-t border-border px-4 py-3 flex gap-2"
+              style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom, 0.75rem))" }}
+            >
               {api.isAuthenticated() ? (
                 <>
                   <input

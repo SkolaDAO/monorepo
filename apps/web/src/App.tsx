@@ -1432,9 +1432,10 @@ function Footer() {
         </div>
 
         <div className="border-t border-border mt-12 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            © {currentYear} Skola. Built on Base.
-          </p>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span>© {currentYear} Skola. Built on Base.</span>
+            <a href="/privacy.html" className="hover:text-foreground transition-colors">Privacy Policy</a>
+          </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
             All systems operational

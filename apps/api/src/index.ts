@@ -40,6 +40,10 @@ app.get("/health", (c) => c.json({ status: "ok", timestamp: new Date().toISOStri
 
 app.route("/auth", auth);
 app.route("/users", usersRouter);
+// Likes & comments must be registered before courses router
+// so /courses/liked-ids doesn't get caught by /courses/:id
+app.route("/", likesRouter);
+app.route("/", commentsRouter);
 app.route("/courses", coursesRouter);
 app.route("/chapters", chaptersRouter);
 app.route("/lessons", lessonsRouter);
@@ -53,8 +57,6 @@ app.route("/admin", adminRouter);
 app.route("/reports", reportsRouter);
 app.route("/feedback", feedbackRouter);
 app.route("/analytics", analyticsRouter);
-app.route("/", likesRouter);
-app.route("/", commentsRouter);
 
 app.onError((err, c) => {
   if (err instanceof HTTPException) {

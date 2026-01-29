@@ -100,7 +100,7 @@ function AuthenticatedChat({ userId }: { userId: string }) {
   const hasRoom = selectedRoomId && selectedRoomType;
 
   return (
-    <div className="flex h-[calc(100vh-4rem)]">
+    <div className="flex h-[calc(100dvh-4rem)]">
       {/* Sidebar — always visible on md+, hidden on mobile when a room is selected */}
       <aside
         className={cn(
@@ -157,7 +157,7 @@ function AuthenticatedChat({ userId }: { userId: string }) {
       {/* Chat area — always visible on md+, hidden on mobile when no room selected */}
       <main
         className={cn(
-          "flex flex-1 flex-col",
+          "flex min-h-0 flex-1 flex-col",
           hasRoom ? "flex" : "hidden md:flex"
         )}
       >
@@ -269,7 +269,7 @@ function ChatRoom({ roomId, userId }: { roomId: string; userId: string }) {
 
   return (
     <>
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -279,7 +279,7 @@ function ChatRoom({ roomId, userId }: { roomId: string; userId: string }) {
             No messages yet. Start the conversation!
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="flex min-h-full flex-col justify-end space-y-4">
             {messages.map((message) => (
               <MessageBubble
                 key={message.id}

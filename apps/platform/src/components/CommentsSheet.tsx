@@ -172,27 +172,33 @@ export function CommentsSheet({ isOpen, onClose, courseId }: CommentsSheetProps)
             </div>
 
             {/* Input bar */}
-            {api.isAuthenticated() && (
-              <div className="border-t border-border px-4 py-3 flex gap-2">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Add a comment..."
-                  maxLength={500}
-                  className="flex-1 rounded-full bg-muted px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
-                />
-                <button
-                  onClick={handleSend}
-                  disabled={!input.trim() || isPosting}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-40 transition-opacity"
-                >
-                  <SendIcon className="h-4 w-4" />
-                </button>
-              </div>
-            )}
+            <div className="border-t border-border px-4 py-3 flex gap-2">
+              {api.isAuthenticated() ? (
+                <>
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Add a comment..."
+                    maxLength={500}
+                    className="flex-1 rounded-full bg-muted px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                  <button
+                    onClick={handleSend}
+                    disabled={!input.trim() || isPosting}
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-40 transition-opacity"
+                  >
+                    <SendIcon className="h-4 w-4" />
+                  </button>
+                </>
+              ) : (
+                <p className="w-full text-center text-sm text-muted-foreground py-1">
+                  Sign in to comment
+                </p>
+              )}
+            </div>
           </motion.div>
         </>
       )}
